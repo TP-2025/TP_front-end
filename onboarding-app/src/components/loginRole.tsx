@@ -18,15 +18,22 @@ type DropdownRoleProps = {
 }
 
 export function DropdownRole({ role, setRole }: DropdownRoleProps) {
-    const isDefault = role === "choose role"
+    const isDefault = role === "Choose role" || role === "Vyber rolu"
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center justify-between w-full gap-2">
-          <span className={isDefault ? "text-muted-foreground font-normal" : "text-foreground"}>
-            {isDefault ? "Choose Role" : role.charAt(0).toUpperCase() + role.slice(1)}
-          </span>
+                    <span
+                        className={
+                            "text-sm " +
+                            (isDefault
+                                ? "text-muted-foreground font-normal"
+                                : "text-foreground font-medium")
+                        }
+                    >
+                        {isDefault ? role : role.charAt(0).toUpperCase() + role.slice(1)}
+                    </span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
