@@ -6,7 +6,9 @@ import {
     Info,
     Settings,
     LogOut,
+    Image,
 } from "lucide-react"
+import { Link } from "react-router-dom"
 
 import {
     Sidebar,
@@ -19,7 +21,6 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-
 const bottomItem = {
     title: "Logout",
     url: "#",
@@ -27,28 +28,30 @@ const bottomItem = {
 }
 
 export function AppSidebar() {
+    const LogoutIcon = bottomItem.icon
+
     return (
         <Sidebar>
-            <SidebarContent  className="flex flex-col justify-between h-full">
+            <SidebarContent className="flex flex-col justify-between h-full">
                 <div>
                     <SidebarGroup>
-                        <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Dashboard</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={true}>
-                                        <a href="/">
+                                    <SidebarMenuButton asChild>
+                                        <Link to="/home" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Home />
-                                            <span>Home</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Home</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <a href="/Info">
+                                        <Link to="/info" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Info />
-                                            <span>Info</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Info</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             </SidebarMenu>
@@ -56,31 +59,47 @@ export function AppSidebar() {
                     </SidebarGroup>
 
                     <SidebarGroup>
-                        <SidebarGroupLabel>Users</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Apps</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <a href="/dostors">
+                                        <Link to="/photos" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
+                                            <Image />
+                                            <span className="text-lg font-medium text-gray-700">Photos</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Users</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <Link to="/doctors" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <UserCircle />
-                                            <span>Doctors</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Doctors</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <a href="/moderators">
+                                        <Link to="/moderators" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Shield />
-                                            <span>Moderators</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Moderators</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <a href="/patients">
+                                        <Link to="/patients" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Users />
-                                            <span>Patients</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Patients</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             </SidebarMenu>
@@ -88,15 +107,15 @@ export function AppSidebar() {
                     </SidebarGroup>
 
                     <SidebarGroup>
-                        <SidebarGroupLabel>System</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">System</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <a href="/settings">
+                                        <Link to="/settings" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Settings />
-                                            <span>Settings</span>
-                                        </a>
+                                            <span className="text-lg font-medium text-gray-700">Settings</span>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             </SidebarMenu>
@@ -108,15 +127,15 @@ export function AppSidebar() {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild>
-                                <a
-                                    href={bottomItem.url}
+                                <Link
+                                    to={bottomItem.url}
                                     className="group flex items-center gap-3 p-3 rounded-md hover:bg-green-100 transition-colors"
                                 >
-                                    <bottomItem.icon className="w-6 h-6 text-gray-600 group-hover:text-green-600" />
-                                    <span className="text-lg font-medium group-hover:text-green-600">
+                                    <LogoutIcon className="w-6 h-6 text-gray-700 group-hover:text-green-600" />
+                                    <span className="text-lg font-medium text-gray-700 group-hover:text-green-600">
                                         {bottomItem.title}
                                     </span>
-                                </a>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
