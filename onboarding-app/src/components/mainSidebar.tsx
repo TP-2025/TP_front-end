@@ -3,7 +3,6 @@ import {
     Users,
     Shield,
     UserCircle,
-    Image,
     Info,
     Settings,
     LogOut,
@@ -20,16 +19,6 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const items = [
-    { title: "Home", url: "#", icon: Home },
-    { title: "Doctors", url: "#", icon: UserCircle },
-    { title: "Moderators", url: "#", icon: Shield },
-    { title: "Patients", url: "#", icon: Users },
-    { title: "Photos", url: "#", icon: Image },
-    { title: "Info", url: "#", icon: Info },
-    { title: "Settings", url: "#", icon: Settings },
-]
-
 
 const bottomItem = {
     title: "Logout",
@@ -43,22 +32,73 @@ export function AppSidebar() {
             <SidebarContent  className="flex flex-col justify-between h-full">
                 <div>
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-lg font-semibold">Menu</SidebarGroupLabel>
+                        <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                {items.map((item) => (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild>
-                                            <a
-                                                href={item.url}
-                                                className="flex items-center gap-3 p-5 hover:bg-gray-700 rounded transition-colors"
-                                            >
-                                                <item.icon className="w-6 h-6 " />
-                                                <span className="text-xl">{item.title}</span>
-                                            </a>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={true}>
+                                        <a href="/">
+                                            <Home />
+                                            <span>Home</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <a href="/Info">
+                                            <Info />
+                                            <span>Info</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Users</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <a href="/dostors">
+                                            <UserCircle />
+                                            <span>Doctors</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <a href="/moderators">
+                                            <Shield />
+                                            <span>Moderators</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <a href="/patients">
+                                            <Users />
+                                            <span>Patients</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel>System</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <a href="/settings">
+                                            <Settings />
+                                            <span>Settings</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
