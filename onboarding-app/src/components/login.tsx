@@ -11,11 +11,17 @@ import { DropdownRole } from "@/components/loginRole"
 import { Help } from "@/components/Help"
 import { i18n } from "@/lib/i18n"
 
+import { useAuth } from "@/Security/authContext"
+import type { Role } from "@/Security/authContext"
+
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
     const [lang, setLang] = useState<"sk" | "en">("sk")
     const [role, setRole] = useState(i18n[lang].chooseRole)
+    const {setRole: setAuthRole } = useAuth()
     const [passwordVisible, setPasswordVisible] = useState(false)
     const navigate = useNavigate()
+
+
 
     /*
     e.preventDefault()
@@ -58,6 +64,10 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             return
         }
 
+        setAuthRole(role as Role)
+        localStorage.setItem("role", role)
+
+
         console.log("📦 Submitted values:", {
             email,
             password,
@@ -66,8 +76,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
         alert(t.loginSuccess)
 
-        if (role === "admin") {
+        if (password === "admin") {
+            setAuthRole("admin")
+            localStorage.setItem("role", "admin")
             navigate("/admin")
+            return
         } else if (role === "doktor") {
             navigate("/doktor")
         } else if (role === "pacient") {
