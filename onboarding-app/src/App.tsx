@@ -6,6 +6,7 @@ import DoctorsMainContent from "@/pages/Doctors/DosctorsMainContent"
 import ModeratorsMainContent from "@/pages/Moderators/ModeratorMainContent"
 import AdminsMainContent from "@/pages/Admins/AdminsMainContent"
 import PatientsMainContent from "@/pages/Patients/PatientsMainContent"
+import InfoPage from "@/pages/otherSidebarStuff/Info.tsx";
 import { RoleProtectedRoute } from "@/Security/RoleRoute"
 import { useAuth } from "@/Security/authContext"
 
@@ -23,7 +24,7 @@ function App() {
                 <Route
                     path="doctors"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
                             <DoctorsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -31,7 +32,7 @@ function App() {
                 <Route
                     path="moderators"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                        <RoleProtectedRoute allowedRoles={["admin", "doktor"]}>
                             <ModeratorsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -39,7 +40,7 @@ function App() {
                 <Route
                     path="admins"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
                             <AdminsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -47,8 +48,16 @@ function App() {
                 <Route
                     path="patients"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
                             <PatientsMainContent />
+                        </RoleProtectedRoute>
+                    }
+                />
+                <Route
+                    path="info"
+                    element={
+                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                            <InfoPage />
                         </RoleProtectedRoute>
                     }
                 />

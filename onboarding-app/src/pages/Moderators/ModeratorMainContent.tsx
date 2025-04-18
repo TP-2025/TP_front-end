@@ -179,12 +179,12 @@ export default function ModeratorsMainContent() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Join Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-1/5">Name</TableHead>
+                                    <TableHead className="w-1/5">Email</TableHead>
+                                    <TableHead className="w-1/5">Phone</TableHead>
+                                    <TableHead className="w-1/5">Status</TableHead>
+                                    <TableHead className="w-1/5">Join Date</TableHead>
+                                    <TableHead className="w-1/5 text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

@@ -160,11 +160,11 @@ export default function AdminsMainContent() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Join Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-1/4">Name</TableHead>
+                                    <TableHead className="w-1/4">Email</TableHead>
+                                    <TableHead className="w-1/4">Phone</TableHead>
+                                    <TableHead className="w-1/4">Join Date</TableHead>
+                                    <TableHead className="w-1/4 text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

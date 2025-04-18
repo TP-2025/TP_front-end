@@ -163,12 +163,12 @@ export default function DoctorsMainContent() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Patients</TableHead>
-                                    <TableHead>Join Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-1/5">Name</TableHead>
+                                    <TableHead className="w-1/5">Email</TableHead>
+                                    <TableHead className="w-1/5">Phone</TableHead>
+                                    <TableHead className="w-1/5">Patients</TableHead>
+                                    <TableHead className="w-1/5">Join Date</TableHead>
+                                    <TableHead className="w-1/5 text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

@@ -31,6 +31,7 @@ type Patient = {
     email: string
     phone: string
     joinDate: string
+    photos: number
 }
 
 const mockPatients: Patient[] = [
@@ -40,6 +41,7 @@ const mockPatients: Patient[] = [
         email: "alice.novak@example.com",
         phone: "+421 987 654 321",
         joinDate: "Apr 5, 2024",
+        photos: 12,
     },
     {
         id: 2,
@@ -47,8 +49,10 @@ const mockPatients: Patient[] = [
         email: "peter.kovac@example.com",
         phone: "+421 912 345 678",
         joinDate: "Mar 12, 2023",
+        photos: 8,
     },
 ]
+
 
 export default function PacientsMainContent() {
     const [patients, setPatients] = useState<Patient[]>(mockPatients)
@@ -72,7 +76,7 @@ export default function PacientsMainContent() {
             p.phone.includes(searchTerm)
     )
 
-    const addPatient = (newP: Omit<Patient, "id" | "joinDate">) => {
+    const addPatient = (newP: Omit<Patient, "id" | "joinDate" | "photos">) => {
         setPatients([
             ...patients,
             {
@@ -83,6 +87,7 @@ export default function PacientsMainContent() {
                     day: "numeric",
                     year: "numeric",
                 }),
+                photos: 0,
             },
         ])
         setIsAddOpen(false)
@@ -164,11 +169,12 @@ export default function PacientsMainContent() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Join Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-1/5">Name</TableHead>
+                                    <TableHead className="w-1/5">Email</TableHead>
+                                    <TableHead className="w-1/5">Phone</TableHead>
+                                    <TableHead className="w-1/5">Photos</TableHead>
+                                    <TableHead className="w-1/5">Join Date</TableHead>
+                                    <TableHead className="w-1/5 text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -186,6 +192,7 @@ export default function PacientsMainContent() {
                                             </TableCell>
                                             <TableCell>{p.email}</TableCell>
                                             <TableCell>{p.phone}</TableCell>
+                                            <TableCell>{p.photos}</TableCell>
                                             <TableCell>{p.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
@@ -211,7 +218,7 @@ export default function PacientsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">
+                                        <TableCell colSpan={6} className="text-center h-24">
                                             No patients found.
                                         </TableCell>
                                     </TableRow>
