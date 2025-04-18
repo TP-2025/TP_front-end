@@ -30,9 +30,14 @@ const bottomItem = {
     icon: LogOut,
 }
 
+import { useLogout } from "@/pages/otherSidebarStuff/Logout"
+
+
 export function AppSidebar() {
     const LogoutIcon = bottomItem.icon
     const { role } = useAuth()
+    const logout = useLogout()
+
     return (
         <Sidebar>
             <SidebarContent className="flex flex-col justify-between h-full">
@@ -145,16 +150,12 @@ export function AppSidebar() {
                 <div className="pb-4">
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link
-                                    to={bottomItem.url}
-                                    className="group flex items-center gap-3 p-3 rounded-md hover:bg-green-100 transition-colors"
-                                >
-                                    <LogoutIcon className="w-6 h-6 " />
-                                    <span className="text-lg font-medium ">
-                                        {bottomItem.title}
-                                    </span>
-                                </Link>
+                            <SidebarMenuButton
+                                onClick={logout}
+                                className="group flex items-center gap-3 p-3 rounded-md hover:bg-green-100 transition-colors"
+                            >
+                                <LogoutIcon className="w-6 h-6" />
+                                <span className="text-lg font-medium">Odhlásiť sa</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
