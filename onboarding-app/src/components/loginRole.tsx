@@ -23,7 +23,7 @@ export function DropdownRole({ role, setRole }: DropdownRoleProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center justify-between w-full gap-2">
+                <Button variant="outline" className="flex items-center justify-between w-full gap-2 bg-gray-100">
                     <span
                         className={
                             "text-sm " +

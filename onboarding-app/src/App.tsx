@@ -37,6 +37,9 @@ import Doctor from "@/pages/Doctor"
 import Pacient from "@/pages/Pacient"
 import DoctorsMainContent from "@/pages/Doctors/DosctorsMainContent"
 import ModeratorsMainContent from "@/pages/Moderators/ModeratorMainContent"
+import AdminsMainContent from "@/pages/Admins/AdminsMainContent.tsx";
+import PacientsMainContent from "@/pages/Patients/PatientsMainContent.tsx";
+
 import { RoleProtectedRoute } from "@/Security/RoleRoute"
 
 function App() {
@@ -94,6 +97,22 @@ function App() {
                     element={
                         <RoleProtectedRoute allowedRoles={["admin"]}>
                             <ModeratorsMainContent />
+                        </RoleProtectedRoute>
+                    }
+                />
+                <Route
+                    path="admins"
+                    element={
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                            <AdminsMainContent />
+                        </RoleProtectedRoute>
+                    }
+                />
+                <Route
+                    path="patients"
+                    element={
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                            <PacientsMainContent />
                         </RoleProtectedRoute>
                     }
                 />

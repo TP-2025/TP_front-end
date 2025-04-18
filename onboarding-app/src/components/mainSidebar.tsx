@@ -7,6 +7,7 @@ import {
     Settings,
     LogOut,
     Image,
+    Crown,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -80,6 +81,16 @@ export function AppSidebar() {
                         <SidebarGroupLabel className="text-sm text-gray-600">Users</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
+                                {role === "admin" && (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton asChild>
+                                            <Link to="/admins" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
+                                                <Crown />
+                                                <span className="text-lg font-medium text-gray-700">Admin</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )}
                                 {role === "admin" && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild>

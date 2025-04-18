@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash, User2 } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,37 +21,34 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
 
-type Doctor = {
+type Admin = {
     id: number
     name: string
     email: string
     phone: string
     joinDate: string
-    patients: number
 }
 
-const mockDoctors: Doctor[] = [
+const mockAdmins: Admin[] = [
     {
         id: 1,
-        name: "Dr. Matej Horský",
-        email: "Dr. Matej_Horský@example.com",
-        phone: "+421 915674624",
-        joinDate: "Jan 15, 2023",
-        patients: 42,
+        name: "Alice Smith",
+        email: "alice.smith@example.com",
+        phone: "+421 912345678",
+        joinDate: "Jan 1, 2024",
     },
     {
         id: 2,
-        name: "Dr. Michal ervevr",
-        email: "michal.kmgveo@example.com",
-        phone: "+421 9846756941",
-        joinDate: "Mar 3, 2023",
-        patients: 38,
+        name: "Bob Johnson",
+        email: "bob.johnson@example.com",
+        phone: "+421 987654321",
+        joinDate: "Feb 12, 2024",
     },
 ]
 
-export default function DoctorsMainContent() {
-    const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors)
-    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false)
+export default function AdminsMainContent() {
+    const [admins, setAdmins] = useState<Admin[]>(mockAdmins)
+    const [isAddOpen, setIsAddOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const { role } = useAuth()
     const navigate = useNavigate()
@@ -64,35 +61,35 @@ export default function DoctorsMainContent() {
 
     if (role !== "admin") return null
 
-    const filteredDoctors = doctors.filter(
-        (doctor) =>
-            doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredAdmins = admins.filter(
+        (admin) =>
+            admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            admin.phone.includes(searchTerm)
     )
 
-    const addDoctor = (newDoctor: Omit<Doctor, "id" | "joinDate" | "patients">) => {
-        setDoctors([
-            ...doctors,
+    const addAdmin = (newAdmin: Omit<Admin, "id" | "joinDate">) => {
+        setAdmins([
+            ...admins,
             {
-                id: doctors.length + 1,
-                ...newDoctor,
+                id: admins.length + 1,
+                ...newAdmin,
                 joinDate: new Date().toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
                 }),
-                patients: 0,
             },
         ])
-        setIsAddDoctorOpen(false)
+        setIsAddOpen(false)
     }
 
     return (
-        <div className="flex-1 w-full p-6 lg:p-8">
+        <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Doctors</h1>
-                    <p className="text-muted-foreground">Manage doctor profiles and information.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Admins</h1>
+                    <p className="text-muted-foreground">Manage admin users and permissions.</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -100,35 +97,35 @@ export default function DoctorsMainContent() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Search doctors..."
+                            placeholder="Search admins..."
                             className="w-full pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddDoctorOpen} onOpenChange={setIsAddDoctorOpen}>
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add Doctor
+                                Add Admin
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Add New Doctor</DialogTitle>
-                                <DialogDescription>Enter the details of the new doctor profile.</DialogDescription>
+                                <DialogTitle>Add New Admin</DialogTitle>
+                                <DialogDescription>Fill in the admin's contact info.</DialogDescription>
                             </DialogHeader>
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
                                     const form = e.currentTarget as HTMLFormElement
                                     const formData = new FormData(form)
-                                    const newDoctor = {
+                                    const newAdmin = {
                                         name: formData.get("name") as string,
                                         email: formData.get("email") as string,
                                         phone: formData.get("phone") as string,
                                     }
-                                    addDoctor(newDoctor)
+                                    addAdmin(newAdmin)
                                 }}
                             >
                                 <div className="grid gap-4 py-4">
@@ -146,8 +143,8 @@ export default function DoctorsMainContent() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddDoctorOpen(false)}>Cancel</Button>
-                                    <Button type="submit">Save Doctor</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                                    <Button type="submit">Save Admin</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -156,8 +153,8 @@ export default function DoctorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Doctor Directory</CardTitle>
-                        <CardDescription>A list of all doctors in the system.</CardDescription>
+                        <CardTitle>Admin List</CardTitle>
+                        <CardDescription>Overview of all system admins.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -166,30 +163,26 @@ export default function DoctorsMainContent() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Phone</TableHead>
-                                    <TableHead>Patients</TableHead>
                                     <TableHead>Join Date</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredDoctors.length > 0 ? (
-                                    filteredDoctors.map((doctor) => (
-                                        <TableRow key={doctor.id}>
+                                {filteredAdmins.length > 0 ? (
+                                    filteredAdmins.map((admin) => (
+                                        <TableRow key={admin.id}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={doctor.name} />
-                                                        <AvatarFallback>
-                                                            <User2 className="w-4 h-4 text-muted-foreground" />
-                                                        </AvatarFallback>
+                                                        <AvatarImage src={`/placeholder.svg`} alt={admin.name} />
+                                                        <AvatarFallback>{admin.name[0]}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{doctor.name}</div>
+                                                    <div>{admin.name}</div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{doctor.email}</TableCell>
-                                            <TableCell>{doctor.phone}</TableCell>
-                                            <TableCell>{doctor.patients}</TableCell>
-                                            <TableCell>{doctor.joinDate}</TableCell>
+                                            <TableCell>{admin.email}</TableCell>
+                                            <TableCell>{admin.phone}</TableCell>
+                                            <TableCell>{admin.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -214,8 +207,8 @@ export default function DoctorsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
-                                            No doctors found.
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            No admins found.
                                         </TableCell>
                                     </TableRow>
                                 )}

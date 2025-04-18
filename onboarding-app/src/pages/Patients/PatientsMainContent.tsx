@@ -1,57 +1,58 @@
+// src/pages/Pacients/PacientsMainContent.tsx
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash, User2 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle}
+
+from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow}
+
+from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage}
+
+from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter,
+         DialogHeader, DialogTitle, DialogTrigger}
+
+from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger}
+
+from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
 
-type Doctor = {
+type Patient = {
     id: number
     name: string
     email: string
     phone: string
     joinDate: string
-    patients: number
 }
 
-const mockDoctors: Doctor[] = [
+const mockPatients: Patient[] = [
     {
         id: 1,
-        name: "Dr. Matej Horský",
-        email: "Dr. Matej_Horský@example.com",
-        phone: "+421 915674624",
-        joinDate: "Jan 15, 2023",
-        patients: 42,
+        name: "Alice Novak",
+        email: "alice.novak@example.com",
+        phone: "+421 987 654 321",
+        joinDate: "Apr 5, 2024",
     },
     {
         id: 2,
-        name: "Dr. Michal ervevr",
-        email: "michal.kmgveo@example.com",
-        phone: "+421 9846756941",
-        joinDate: "Mar 3, 2023",
-        patients: 38,
+        name: "Peter Kováč",
+        email: "peter.kovac@example.com",
+        phone: "+421 912 345 678",
+        joinDate: "Mar 12, 2023",
     },
 ]
 
-export default function DoctorsMainContent() {
-    const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors)
-    const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false)
+export default function PacientsMainContent() {
+    const [patients, setPatients] = useState<Patient[]>(mockPatients)
+    const [isAddOpen, setIsAddOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const { role } = useAuth()
     const navigate = useNavigate()
@@ -64,35 +65,35 @@ export default function DoctorsMainContent() {
 
     if (role !== "admin") return null
 
-    const filteredDoctors = doctors.filter(
-        (doctor) =>
-            doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredPatients = patients.filter(
+        (p) =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.phone.includes(searchTerm)
     )
 
-    const addDoctor = (newDoctor: Omit<Doctor, "id" | "joinDate" | "patients">) => {
-        setDoctors([
-            ...doctors,
+    const addPatient = (newP: Omit<Patient, "id" | "joinDate">) => {
+        setPatients([
+            ...patients,
             {
-                id: doctors.length + 1,
-                ...newDoctor,
+                id: patients.length + 1,
+                ...newP,
                 joinDate: new Date().toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
                 }),
-                patients: 0,
             },
         ])
-        setIsAddDoctorOpen(false)
+        setIsAddOpen(false)
     }
 
     return (
-        <div className="flex-1 w-full p-6 lg:p-8">
+        <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Doctors</h1>
-                    <p className="text-muted-foreground">Manage doctor profiles and information.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Patients</h1>
+                    <p className="text-muted-foreground">Manage registered patients.</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -100,35 +101,35 @@ export default function DoctorsMainContent() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Search doctors..."
+                            placeholder="Search patients..."
                             className="w-full pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddDoctorOpen} onOpenChange={setIsAddDoctorOpen}>
+                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add Doctor
+                                Add Patient
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Add New Doctor</DialogTitle>
-                                <DialogDescription>Enter the details of the new doctor profile.</DialogDescription>
+                                <DialogTitle>Add New Patient</DialogTitle>
+                                <DialogDescription>Enter the patient's contact info.</DialogDescription>
                             </DialogHeader>
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
                                     const form = e.currentTarget as HTMLFormElement
                                     const formData = new FormData(form)
-                                    const newDoctor = {
+                                    const newPatient = {
                                         name: formData.get("name") as string,
                                         email: formData.get("email") as string,
                                         phone: formData.get("phone") as string,
                                     }
-                                    addDoctor(newDoctor)
+                                    addPatient(newPatient)
                                 }}
                             >
                                 <div className="grid gap-4 py-4">
@@ -146,8 +147,8 @@ export default function DoctorsMainContent() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddDoctorOpen(false)}>Cancel</Button>
-                                    <Button type="submit">Save Doctor</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                                    <Button type="submit">Save Patient</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -156,8 +157,8 @@ export default function DoctorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Doctor Directory</CardTitle>
-                        <CardDescription>A list of all doctors in the system.</CardDescription>
+                        <CardTitle>Patient List</CardTitle>
+                        <CardDescription>Overview of registered patients.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -166,30 +167,26 @@ export default function DoctorsMainContent() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Phone</TableHead>
-                                    <TableHead>Patients</TableHead>
                                     <TableHead>Join Date</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredDoctors.length > 0 ? (
-                                    filteredDoctors.map((doctor) => (
-                                        <TableRow key={doctor.id}>
+                                {filteredPatients.length > 0 ? (
+                                    filteredPatients.map((p) => (
+                                        <TableRow key={p.id}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={doctor.name} />
-                                                        <AvatarFallback>
-                                                            <User2 className="w-4 h-4 text-muted-foreground" />
-                                                        </AvatarFallback>
+                                                        <AvatarImage src="/placeholder.svg" alt={p.name} />
+                                                        <AvatarFallback>{p.name[0]}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{doctor.name}</div>
+                                                    <div>{p.name}</div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{doctor.email}</TableCell>
-                                            <TableCell>{doctor.phone}</TableCell>
-                                            <TableCell>{doctor.patients}</TableCell>
-                                            <TableCell>{doctor.joinDate}</TableCell>
+                                            <TableCell>{p.email}</TableCell>
+                                            <TableCell>{p.phone}</TableCell>
+                                            <TableCell>{p.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -214,8 +211,8 @@ export default function DoctorsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
-                                            No doctors found.
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            No patients found.
                                         </TableCell>
                                     </TableRow>
                                 )}

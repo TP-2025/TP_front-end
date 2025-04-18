@@ -34,17 +34,17 @@ type Moderator = {
 const mockModerators: Moderator[] = [
     {
         id: 1,
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        phone: "+1 (555) 111-2222",
+        name: "Jane dawd",
+        email: "jane.adwd@example.com",
+        phone: "+421 4697685132",
         status: "Active",
         joinDate: "Feb 5, 2023",
     },
     {
         id: 2,
-        name: "Tom Green",
-        email: "tom.green@example.com",
-        phone: "+1 (555) 222-3333",
+        name: "Tom rer",
+        email: "tom.wefev@example.com",
+        phone: "+421 9164732684",
         status: "On Leave",
         joinDate: "Jul 10, 2022",
     },

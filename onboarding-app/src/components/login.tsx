@@ -100,16 +100,18 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     }
 
     return (
-        <div className={cn("flex w-full h-screen items-center justify-center", className)} {...props}>
-            <div className="flex w-full max-w-7xl items-center justify-between">
+        <div className={cn("flex w-full h-screen items-center justify-start px-65", className)} {...props}>
+            <div className="flex w-full max-w-7xl items-center justify-between gap-50">
                 {/* Logo a názov spoločnosti na ľavej strane */}
-                <div className="flex items-center gap-4">
-                    <img src="/logo.png" alt="Logo" className="w-16 h-16" />
-                    <h1 className="text-2xl font-semibold">Názov spoločnosti</h1>
+                <div className="flex w-full max-w-5xl items-center justify-center ">
+                    <img src="/LogoSkupinovy.png"
+                         alt="OcuNet Logo"
+                         className="w-80 h-80 mb-10 object-contain rounded-xl "/>
+                    <h1 className="text-6xl font-bold text-gray-800 tracking-tight">OcuNet</h1>
                 </div>
 
                 {/* Login formulár na pravej strane */}
-                <Card className="w-full max-w-md p-5 shadow-lg border rounded-xl bg-white">
+                <Card className="w-full max-w-md p-5 shadow-lg border rounded-xl bg-gray-100 ">
                     <CardHeader>
                         <CardTitle className="text-2xl">{t.login}</CardTitle>
                         <CardDescription>{t.description}</CardDescription>
@@ -183,7 +185,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex justify-between w-full">
+                                <div className="flex justify-between w-full gap-3">
                                     <Button type="submit" className="w-40">
                                         {t.login}
                                     </Button>
