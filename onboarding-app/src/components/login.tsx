@@ -14,6 +14,9 @@ import { i18n } from "@/lib/i18n"
 import { useAuth } from "@/Security/authContext"
 import type { Role } from "@/Security/authContext"
 
+
+
+
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
     const [lang, setLang] = useState<"sk" | "en">("sk")
     const [role, setRole] = useState(i18n[lang].chooseRole)
@@ -64,9 +67,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             return
         }
 
-        setAuthRole(role as Role)
-        localStorage.setItem("role", role)
-
 
         console.log("📦 Submitted values:", {
             email,
@@ -74,22 +74,18 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             role
         })
 
-        alert(t.loginSuccess)
+        //alert(t.loginSuccess)
 
         if (password === "admin") {
             setAuthRole("admin")
             localStorage.setItem("role", "admin")
-            navigate("/admin")
-            return
-        } else if (role === "doktor") {
-            navigate("/doktor")
-        } else if (role === "pacient") {
-            navigate("/pacient")
-        } else if (role === "moderator") {
-            navigate("/moderator")
         } else {
-            navigate("/home")
+            setAuthRole(role as Role)
+            localStorage.setItem("role", role)
         }
+        navigate("/dashboard")
+
+
 
     }
 

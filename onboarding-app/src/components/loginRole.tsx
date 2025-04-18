@@ -43,7 +43,7 @@ export function DropdownRole({ role, setRole }: DropdownRoleProps) {
                 <DropdownMenuRadioGroup value={role} onValueChange={setRole}>
                     <DropdownMenuRadioItem value="doktor">Doktor</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="pacient">Pacient</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="moderator">Moderator</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="moderator">Moderátor</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
             </DropdownMenuContent>
         </DropdownMenu>

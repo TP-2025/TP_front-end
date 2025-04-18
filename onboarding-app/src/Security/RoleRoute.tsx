@@ -1,33 +1,27 @@
-import { ReactNode, useEffect, useState } from "react"
+// src/Security/RoleRoute.tsx
+import { ReactNode, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/Security/authContext"
-
 
 type Role = "admin" | "moderator" | "doktor" | "pacient"
 
-interface RoleProtectedRouteProps {
+interface Props {
     allowedRoles: Role[]
     children: ReactNode
 }
 
-export function RoleProtectedRoute({ allowedRoles, children }: RoleProtectedRouteProps) {
-    const { role } = useAuth()
-    const [show, setShow] = useState(false)
-
+export function RoleProtectedRoute({ allowedRoles, children }: Props) {
+    const { role, loading } = useAuth()
+    const navigate = useNavigate()
 
     useEffect(() => {
-        if (!role) {
-            // If no role, go to login
-            window.location.href = "/"
-        } else if (allowedRoles.includes(role)) {
-            setShow(true)
-        } else {
-            // Role exists but not allowed – stay on current route, show nothing
-            setShow(false)
+        if (!loading && !role) {
+            navigate("/")
         }
-    }, [role, allowedRoles])
+    }, [loading, role, navigate])
 
-    if (!role) return null
-    if (!show) return null
+    if (loading) return <div className="p-6">Loading...</div>
+    if (!role || !allowedRoles.includes(role)) return null
 
     return <>{children}</>
 }

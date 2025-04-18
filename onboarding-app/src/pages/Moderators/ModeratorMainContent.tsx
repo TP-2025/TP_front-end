@@ -58,12 +58,13 @@ export default function ModeratorsMainContent() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (role !== "admin") {
+        if (!["admin", "doktor"].includes(role || "")) {
             navigate("/")
         }
     }, [role, navigate])
 
-    if (role !== "admin") return null
+    if (!["admin", "doktor"].includes(role || "")) return null
+
 
     const filteredModerators = moderators.filter(
         (mod) =>

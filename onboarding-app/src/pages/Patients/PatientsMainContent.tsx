@@ -58,12 +58,12 @@ export default function PacientsMainContent() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (role !== "admin") {
+        if (!["admin", "doktor", "moderator"].includes(role || "")) {
             navigate("/")
         }
     }, [role, navigate])
 
-    if (role !== "admin") return null
+    if (!["admin", "doktor", "moderator"].includes(role || "")) return null
 
     const filteredPatients = patients.filter(
         (p) =>
