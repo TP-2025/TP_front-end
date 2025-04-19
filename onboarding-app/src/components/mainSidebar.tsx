@@ -43,14 +43,14 @@ export function AppSidebar() {
             <SidebarContent className="flex flex-col justify-between h-full">
                 <div>
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-sm text-gray-600">Dashboard</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Menu</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
                                         <Link to="/home" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Home />
-                                            <span className="text-lg font-medium text-gray-700">Home</span>
+                                            <span className="text-lg font-medium text-gray-700">Domov</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -58,7 +58,7 @@ export function AppSidebar() {
                                     <SidebarMenuButton asChild>
                                         <Link to="/info" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Info />
-                                            <span className="text-lg font-medium text-gray-700">Info</span>
+                                            <span className="text-lg font-medium text-gray-700">Informácie</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -67,14 +67,14 @@ export function AppSidebar() {
                     </SidebarGroup>
 
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-sm text-gray-600">Apps</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Aplikácie</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <Link to="/photos" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
+                                        <Link to="/AddPhoto" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Image />
-                                            <span className="text-lg font-medium text-gray-700">Photos</span>
+                                            <span className="text-lg font-medium text-gray-700">Fotky</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -83,7 +83,7 @@ export function AppSidebar() {
                     </SidebarGroup>
 
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-sm text-gray-600">Users</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Používatelia</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {role === "admin" && (
@@ -91,7 +91,7 @@ export function AppSidebar() {
                                         <SidebarMenuButton asChild>
                                             <Link to="/admins" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                                 <Crown />
-                                                <span className="text-lg font-medium text-gray-700">Admin</span>
+                                                <span className="text-lg font-medium text-gray-700">Admini</span>
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -101,7 +101,7 @@ export function AppSidebar() {
                                         <SidebarMenuButton asChild>
                                             <Link to="/doctors" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                                 <UserCircle />
-                                                <span className="text-lg font-medium text-gray-700">Doctors</span>
+                                                <span className="text-lg font-medium text-gray-700">Doktori</span>
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -111,7 +111,7 @@ export function AppSidebar() {
                                         <SidebarMenuButton asChild>
                                             <Link to="/moderators" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                                 <Shield />
-                                                <span className="text-lg font-medium text-gray-700">Moderators</span>
+                                                <span className="text-lg font-medium text-gray-700">Technici</span>
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -121,7 +121,7 @@ export function AppSidebar() {
                                         <SidebarMenuButton asChild>
                                             <Link to="/patients" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                                 <Users />
-                                                <span className="text-lg font-medium text-gray-700">Patients</span>
+                                                <span className="text-lg font-medium text-gray-700">Pacienti</span>
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -131,14 +131,14 @@ export function AppSidebar() {
                     </SidebarGroup>
 
                     <SidebarGroup>
-                        <SidebarGroupLabel className="text-sm text-gray-600">System</SidebarGroupLabel>
+                        <SidebarGroupLabel className="text-sm text-gray-600">Systém</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
                                         <Link to="/settings" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Settings />
-                                            <span className="text-lg font-medium text-gray-700">Settings</span>
+                                            <span className="text-lg font-medium text-gray-700">Nastavenia</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
