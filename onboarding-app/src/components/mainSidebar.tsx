@@ -8,6 +8,7 @@ import {
     LogOut,
     Image,
     Crown,
+    ScanEye,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -75,6 +76,14 @@ export function AppSidebar() {
                                         <Link to="/AddPhoto" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Image />
                                             <span className="text-lg font-medium text-gray-700">Fotky</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <Link to="/Analyze" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
+                                            <ScanEye />
+                                            <span className="text-lg font-medium text-gray-700">Analýza</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

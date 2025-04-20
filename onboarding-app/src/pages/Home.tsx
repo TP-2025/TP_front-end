@@ -8,13 +8,11 @@ export default function Layout() {
             <div className="flex w-full min-h-screen">
                 <AppSidebar />
                 <main className="flex-1 flex flex-col">
-                    {/* Top Header */}
                     <div className="flex items-center justify-between h-16 px-4 border-b">
                         <div className="flex items-center">
                             <SidebarTrigger />
-                            <h1 className="ml-4 text-lg font-semibold">OcuNet</h1>
+                            <h1 className="ml-4 text-2xl font-semibold">OcuNet</h1>
                         </div>
-                        {/* Logo on the right side */}
                         <img
                             src="/LogoSkupinovy.png"
                             alt="OcuNet Logo"
@@ -22,7 +20,6 @@ export default function Layout() {
                         />
                     </div>
 
-                    {/* Main Content */}
                     <div className="flex-1 p-4">
                         <Outlet />
                     </div>

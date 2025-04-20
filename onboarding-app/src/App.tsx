@@ -8,6 +8,7 @@ import AdminsMainContent from "@/pages/Admins/AdminsMainContent"
 import PatientsMainContent from "@/pages/Patients/PatientsMainContent"
 import InfoPage from "@/pages/otherSidebarStuff/Info.tsx";
 import AddPhotoPage from "@/pages/AddPhotoPage/AddPhoto.tsx";
+import AnalyzePhotosMainContent from "@/pages/AnalyzePhotos/AnalyzePhotosMainContent.tsx";
 
 import { RoleProtectedRoute } from "@/Security/RoleRoute"
 import { useAuth } from "@/Security/authContext"
@@ -68,6 +69,14 @@ function App() {
                     element={
                         <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
                             <AddPhotoPage />
+                        </RoleProtectedRoute>
+                    }
+                />
+                <Route
+                    path="Analyze"
+                    element={
+                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
+                            <AnalyzePhotosMainContent />
                         </RoleProtectedRoute>
                     }
                 />

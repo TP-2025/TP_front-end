@@ -107,8 +107,8 @@ export default function ModeratorsMainContent() {
         <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Moderators</h1>
-                    <p className="text-muted-foreground">Manage moderator accounts and access.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Technici</h1>
+                    <p className="text-muted-foreground">Spravuj zoznam technikov.</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -116,7 +116,7 @@ export default function ModeratorsMainContent() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Search moderators..."
+                            placeholder="Hľadaj technikov..."
                             className="w-full pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -126,13 +126,13 @@ export default function ModeratorsMainContent() {
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add Moderator
+                                Pridaj Technika
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Add New Moderator</DialogTitle>
-                                <DialogDescription>Fill in the moderator's contact info.</DialogDescription>
+                                <DialogTitle>Pridaj nového technika</DialogTitle>
+                                <DialogDescription>Vyplň údaje.</DialogDescription>
                             </DialogHeader>
                             <form
                                 onSubmit={(e) => {
@@ -149,7 +149,7 @@ export default function ModeratorsMainContent() {
                             >
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Name</Label>
+                                        <Label htmlFor="name" className="text-right">Meno</Label>
                                         <Input id="name" name="name" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
@@ -157,13 +157,13 @@ export default function ModeratorsMainContent() {
                                         <Input id="email" name="email" type="email" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="phone" className="text-right">Phone</Label>
+                                        <Label htmlFor="phone" className="text-right">Tel. číslo</Label>
                                         <Input id="phone" name="phone" className="col-span-3" required />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                                    <Button type="submit">Save Moderator</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Zruš</Button>
+                                    <Button type="submit">Ulož Technika</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -172,19 +172,19 @@ export default function ModeratorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Moderator List</CardTitle>
-                        <CardDescription>Overview of all system moderators.</CardDescription>
+                        <CardTitle>Zotnam Technikov</CardTitle>
+                        <CardDescription>Prehľad všetkých registrovaných technikov.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-1/5">Name</TableHead>
+                                    <TableHead className="w-1/5">Meno</TableHead>
                                     <TableHead className="w-1/5">Email</TableHead>
-                                    <TableHead className="w-1/5">Phone</TableHead>
+                                    <TableHead className="w-1/5">Tel. číslo</TableHead>
                                     <TableHead className="w-1/5">Status</TableHead>
-                                    <TableHead className="w-1/5">Join Date</TableHead>
-                                    <TableHead className="w-1/5 text-right">Actions</TableHead>
+                                    <TableHead className="w-1/5">Dátum pridania</TableHead>
+                                    <TableHead className="w-1/5 text-right">Akcie</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -208,18 +208,17 @@ export default function ModeratorsMainContent() {
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">Open menu</span>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem>
                                                             <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Edit</span>
+                                                            <span>Uprav</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem className="text-red-600">
                                                             <Trash className="mr-2 h-4 w-4" />
-                                                            <span>Delete</span>
+                                                            <span>Vymaž</span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -229,7 +228,7 @@ export default function ModeratorsMainContent() {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center h-24">
-                                            No moderators found.
+                                            Nebol nájdený technik
                                         </TableCell>
                                     </TableRow>
                                 )}
