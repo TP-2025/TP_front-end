@@ -1,4 +1,4 @@
-import { Calendar, FileText, Eye } from "lucide-react"
+import { Calendar, FileText, Eye, ScanLine } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type Photo = {
@@ -7,11 +7,13 @@ type Photo = {
     date: string
     eye: string
     notes: string
+    analysis: "Analýza 1." | "Analýza 2." | "Analýza 3." | null
 } | null
 
 type PhotoInfoProps = {
     photo: Photo
 }
+
 
 export default function PhotoInfo({ photo }: PhotoInfoProps) {
     if (!photo) {
@@ -58,6 +60,15 @@ export default function PhotoInfo({ photo }: PhotoInfoProps) {
                             <div className="text-sm">{photo.notes}</div>
                         </div>
                     </div>
+
+                    <div className="flex items-start gap-2">
+                        <ScanLine className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div>
+                            <div className="font-medium">Typ analýzy</div>
+                            <div className="text-sm">{photo.analysis ?? "Žiadna"}</div>
+                        </div>
+                    </div>
+
                 </div>
             </CardContent>
         </Card>

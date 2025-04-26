@@ -9,6 +9,9 @@ type Patient = {
     id: number
     name: string
     email: string
+    gender: string
+    age: number
+    birthDate: string
 }
 
 type PatientListProps = {
@@ -27,7 +30,7 @@ export default function PatientList({ patients, selectedPatient, onSelectPatient
     )
 
     return (
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 overflow-hidden space-y-4">
             <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -39,7 +42,7 @@ export default function PatientList({ patients, selectedPatient, onSelectPatient
                 />
             </div>
 
-            <ScrollArea className="h-[350px] pr-5">
+            <ScrollArea className="flex-1 overflow-y-auto pr-5">
                 {filteredPatients.length === 0 ? (
                     <div className="text-center py-4 text-muted-foreground">Pacient nebol nájdený</div>
                 ) : (

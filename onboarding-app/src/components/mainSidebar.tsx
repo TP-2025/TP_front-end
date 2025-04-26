@@ -3,7 +3,6 @@ import {
     Users,
     Shield,
     UserCircle,
-    Info,
     Settings,
     LogOut,
     Image,
@@ -49,17 +48,9 @@ export function AppSidebar() {
                             <SidebarMenu>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
-                                        <Link to="/home" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
+                                        <Link to="/domov" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Home />
                                             <span className="text-lg font-medium text-gray-700">Domov</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link to="/info" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
-                                            <Info />
-                                            <span className="text-lg font-medium text-gray-700">Informácie</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

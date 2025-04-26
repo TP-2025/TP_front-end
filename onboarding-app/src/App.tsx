@@ -1,12 +1,12 @@
 import { Routes, Route } from "react-router-dom"
 import { LoginForm } from "@/components/login"
 import Layout from "@/pages/Home"
-import Dashboard from "@/pages/Dashboard/Dashboard"
+
 import DoctorsMainContent from "@/pages/Doctors/DosctorsMainContent"
 import ModeratorsMainContent from "@/pages/Moderators/ModeratorMainContent"
 import AdminsMainContent from "@/pages/Admins/AdminsMainContent"
 import PatientsMainContent from "@/pages/Patients/PatientsMainContent"
-import InfoPage from "@/pages/otherSidebarStuff/Info.tsx";
+import DomovPage from "@/pages/otherSidebarStuff/Domov.tsx";
 import AddPhotoPage from "@/pages/AddPhotoPage/AddPhoto.tsx";
 import AnalyzePhotosMainContent from "@/pages/AnalyzePhotos/AnalyzePhotosMainContent.tsx";
 
@@ -22,7 +22,7 @@ function App() {
         <Routes>
             <Route path="/" element={<LoginForm />} />
             <Route path="/" element={<Layout />}>
-                <Route path="dashboard" element={<Dashboard />} />
+
 
                 <Route
                     path="doctors"
@@ -57,10 +57,10 @@ function App() {
                     }
                 />
                 <Route
-                    path="info"
+                    path="Domov"
                     element={
                         <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
-                            <InfoPage />
+                            <DomovPage />
                         </RoleProtectedRoute>
                     }
                 />

@@ -83,7 +83,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             setAuthRole(role as Role)
             localStorage.setItem("role", role)
         }
-        navigate("/dashboard")
+        navigate("/Domov")
 
 
 
