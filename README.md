@@ -1,6 +1,6 @@
-kód na merge : Domov.tsx
-nekopíruj náhlad lebo ti to nepôojde
+Stačí len skopírovať : Domov.tsx
 
+```javascript
 export default function DomovPage() {
     return (
         <div className="p-10 max-w-5xl mx-auto">
