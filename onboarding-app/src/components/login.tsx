@@ -6,108 +6,62 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { useNavigate } from "react-router-dom"
-
-import { DropdownRole } from "@/components/loginRole"
 import { Help } from "@/components/Help"
 import { i18n } from "@/lib/i18n"
 
 import { useAuth } from "@/Security/authContext"
-import type { Role } from "@/Security/authContext"
-
-
-
+import { login } from "@/api/authApi"
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
     const [lang, setLang] = useState<"sk" | "en">("sk")
-    const [role, setRole] = useState(i18n[lang].chooseRole)
-    const {setRole: setAuthRole } = useAuth()
     const [passwordVisible, setPasswordVisible] = useState(false)
+    const {setUser, setRoleId } = useAuth()
     const navigate = useNavigate()
 
-
-
-    /*
-    e.preventDefault()
-
-    const form = e.currentTarget as HTMLFormElement
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value
-
-    try {
-        const response = await fetch("http://localhost:3000/api/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email, password }),
-        })
-
-        if (!response.ok) throw new Error("Login failed")
-        const data = await response.json()
-        console.log("✅ Login success", data)
-
-    } catch (err) {
-        console.error("❌ Login error", err)
-        alert("Login failed")
-    }
-
-*/
-
-    const t = i18n[lang] // aktuálne preklady
+    const t = i18n[lang]
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-         const form = e.currentTarget as HTMLFormElement
-         const email = (form.elements.namedItem("email") as HTMLInputElement).value
-         const password = (form.elements.namedItem("password") as HTMLInputElement).value
+        const form = e.currentTarget as HTMLFormElement
+        const email = (form.elements.namedItem("email") as HTMLInputElement).value
+        const password = (form.elements.namedItem("password") as HTMLInputElement).value
 
-        if (role === t.chooseRole) {
-            alert(t.selectRoleAlert)
-            return
+        try {
+            const res = await login({ email, password })
+            const user = res.user
+
+            console.log("✅ Login successful:", user)
+
+            if (user) {
+                setUser(user)
+                setRoleId(user.role_id) // role_id: 1–4
+                localStorage.setItem("user", JSON.stringify(user))
+            }
+
+
+            navigate("/Domov")
+        } catch (err: any) {
+            console.error("❌ Login failed:", err)
+            alert(err.response?.data?.message || "Login failed")
         }
-
-
-        console.log("📦 Submitted values:", {
-            email,
-            password,
-            role
-        })
-
-        //alert(t.loginSuccess)
-
-        if (password === "admin") {
-            setAuthRole("admin")
-            localStorage.setItem("role", "admin")
-        } else {
-            setAuthRole(role as Role)
-            localStorage.setItem("role", role)
-        }
-        navigate("/Domov")
-
-
-
     }
 
     const toggleLang = () => {
-        const newLang = lang === "sk" ? "en" : "sk"
-        setLang(newLang)
-        setRole(i18n[newLang].chooseRole)
+        setLang((prev) => (prev === "sk" ? "en" : "sk"))
     }
 
     return (
         <div className={cn("flex w-full h-screen items-center justify-start px-65", className)} {...props}>
             <div className="flex w-full max-w-7xl items-center justify-between gap-50">
-                {/* Logo a názov spoločnosti na ľavej strane */}
-                <div className="flex w-full max-w-5xl items-center justify-center ">
-                    <img src="/LogoSkupinovy.png"
-                         alt="OcuNet Logo"
-                         className="w-80 h-80 mb-10 object-contain rounded-xl "/>
+                {/* Left Logo & Title */}
+                <div className="flex w-full max-w-5xl items-center justify-center">
+                    <img src="/LogoSkupinovy.png" alt="OcuNet Logo" className="w-80 h-80 mb-10 object-contain rounded-xl" />
                     <h1 className="text-6xl font-bold text-gray-800 tracking-tight">OcuNet</h1>
                 </div>
 
-                {/* Login formulár na pravej strane */}
-                <Card className="w-full max-w-md p-5 shadow-lg border rounded-xl bg-gray-100 ">
+                {/* Right Login Form */}
+                <Card className="w-full max-w-md p-5 shadow-lg border rounded-xl bg-gray-100">
                     <CardHeader>
                         <CardTitle className="text-2xl">{t.login}</CardTitle>
                         <CardDescription>{t.description}</CardDescription>
@@ -115,10 +69,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                     <CardContent>
                         <form onSubmit={handleSubmit}>
                             <div className="flex flex-col gap-6">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="role">{t.role}</Label>
-                                    <DropdownRole role={role} setRole={setRole} />
-                                </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="email">{t.email}</Label>
                                     <Input id="email" name="email" type="email" placeholder="m@example.com" required />
@@ -144,38 +94,16 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                                             onClick={() => setPasswordVisible(!passwordVisible)}
                                         >
                                             {passwordVisible ? (
-                                                <svg
-                                                    xmlns=""
-                                                    width="20"
-                                                    height="20"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="lucide lucide-eye-off"
-                                                >
-                                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
-                                                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
-                                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
-                                                    <line x1="2" x2="22" y1="2" y2="22"></line>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                                    <path d="M10.73 5.08C11.15 5.03 11.57 5 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                                    <line x1="2" y1="2" x2="22" y2="22" />
                                                 </svg>
                                             ) : (
-                                                <svg
-                                                    xmlns=""
-                                                    width="20"
-                                                    height="20"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    className="lucide lucide-eye"
-                                                >
-                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
+                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" />
+                                                    <circle cx="12" cy="12" r="3" />
                                                 </svg>
                                             )}
                                         </button>
@@ -188,7 +116,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                                     <Button type="button" onClick={toggleLang} className="w-25 bg-gray-300 text-gray-800 hover:bg-gray-400">
                                         {t.language}
                                     </Button>
-                                    {/* Tu posielam jazyk do komponentu Help */}
                                     <Help lang={lang} />
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash, User2 } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,71 +20,67 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-
-type Doctor = {
-    id: number
-    name: string
-    email: string
-    phone: string
-    joinDate: string
-    patients: number
-}
-
-const mockDoctors: Doctor[] = [
-    {
-        id: 1,
-        name: "Dr. Matej Horský",
-        email: "Dr. Matej_Horský@example.com",
-        phone: "+421 915674624",
-        joinDate: "Jan 15, 2023",
-        patients: 42,
-    },
-    {
-        id: 2,
-        name: "Dr. Michal ervevr",
-        email: "michal.kmgveo@example.com",
-        phone: "+421 9846756941",
-        joinDate: "Mar 3, 2023",
-        patients: 38,
-    },
-]
+import { getDoctors, addDoctor as addDoctorRequest, deleteDoctor as deleteDoctorRequest, Doctor } from "@/api/doctorApi"
 
 export default function DoctorsMainContent() {
-    const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors)
+    const [doctors, setDoctors] = useState<Doctor[]>([])
+    const [loading, setLoading] = useState(true)
     const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const { role } = useAuth()
+    const { roleId } = useAuth()
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (role !== "admin") {
+        if (roleId !== 4) {
             navigate("/")
+            return
         }
-    }, [role, navigate])
 
-    if (role !== "admin") return null
+        console.log("🔄 Fetching doctors...")
+        setLoading(true)
+        getDoctors()
+            .then((data) => {
+                console.log("✅ Doctors loaded:", data)
+                setDoctors(data)
+            })
+            .catch((err) => {
+                console.error("❌ Failed to load doctors:", err)
+                setDoctors([])
+            })
+            .finally(() => setLoading(false))
+    }, [roleId, navigate])
 
-    const filteredDoctors = doctors.filter(
+    if (roleId !== 4) return null
+
+    const filteredDoctors = (doctors || []).filter(
         (doctor) =>
-            doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            `${doctor.name} ${doctor.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
             doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const addDoctor = (newDoctor: Omit<Doctor, "id" | "joinDate" | "patients">) => {
-        setDoctors([
-            ...doctors,
-            {
-                id: doctors.length + 1,
-                ...newDoctor,
-                joinDate: new Date().toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                }),
-                patients: 0,
-            },
-        ])
-        setIsAddDoctorOpen(false)
+    const addDoctor = async (newDoctor: Omit<Doctor, "id">) => {
+        try {
+            console.log("➕ Adding doctor:", newDoctor)
+            await addDoctorRequest(newDoctor)
+            const updatedList = await getDoctors()
+            console.log("✅ Doctors updated after add:", updatedList)
+            setDoctors(updatedList)
+            setIsAddDoctorOpen(false)
+        } catch (error) {
+            console.error("❌ Failed to add doctor:", error)
+        }
+    }
+
+    const handleDelete = async (id: number) => {
+        try {
+            console.log("🗑️ Deleting doctor with ID:", id)
+            await deleteDoctorRequest(id)
+            const updatedList = await getDoctors()
+            console.log("✅ Doctors updated after delete:", updatedList)
+            setDoctors(updatedList)
+        } catch (error) {
+            console.error("❌ Failed to delete doctor:", error)
+        }
     }
 
     return (
@@ -125,8 +121,8 @@ export default function DoctorsMainContent() {
                                     const formData = new FormData(form)
                                     const newDoctor = {
                                         name: formData.get("name") as string,
+                                        surname: formData.get("surname") as string,
                                         email: formData.get("email") as string,
-                                        phone: formData.get("phone") as string,
                                     }
                                     addDoctor(newDoctor)
                                 }}
@@ -137,12 +133,12 @@ export default function DoctorsMainContent() {
                                         <Input id="name" name="name" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="phone" className="text-right">Tel. číslo</Label>
-                                        <Input id="phone" name="phone" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">Email</Label>
+                                        <Input id="email" name="email" type="email" className="col-span-3" required />
                                     </div>
                                 </div>
                                 <DialogFooter>
@@ -156,40 +152,40 @@ export default function DoctorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Zoznam Doktorov</CardTitle>
-                        <CardDescription>Prehľad všetkých registovaných doktorov</CardDescription>
+                        <CardTitle>Zoznam doktorov</CardTitle>
+                        <CardDescription>Prehľad všetkých registrovaných doktorov</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-1/5">Meno</TableHead>
-                                    <TableHead className="w-1/5">Email</TableHead>
-                                    <TableHead className="w-1/5">Tel. číslo</TableHead>
-                                    <TableHead className="w-1/5">Počet pacientov</TableHead>
-                                    <TableHead className="w-1/5">Dátum pridania</TableHead>
-                                    <TableHead className="w-1/5 text-right">Akcie</TableHead>
+                                    <TableHead className="w-1/2">Meno</TableHead>
+                                    <TableHead className="w-1/2">Email</TableHead>
+                                    <TableHead className="text-right">Akcie</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredDoctors.length > 0 ? (
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            Načítavam doktorov...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredDoctors.length > 0 ? (
                                     filteredDoctors.map((doctor) => (
                                         <TableRow key={doctor.id}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={doctor.name} />
+                                                        <AvatarImage src={`/placeholder.svg`} alt={`${doctor.name} ${doctor.surname}`} />
                                                         <AvatarFallback>
-                                                            <User2 className="w-4 h-4 text-muted-foreground" />
+                                                            {(doctor.name[0] + doctor.surname[0]).toUpperCase()}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <div>{doctor.name}</div>
+                                                    <div>{doctor.name} {doctor.surname}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{doctor.email}</TableCell>
-                                            <TableCell>{doctor.phone}</TableCell>
-                                            <TableCell>{doctor.patients}</TableCell>
-                                            <TableCell>{doctor.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -202,7 +198,7 @@ export default function DoctorsMainContent() {
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Uprav</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600">
+                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(doctor.id)}>
                                                             <Trash className="mr-2 h-4 w-4" />
                                                             <span>Vymaž</span>
                                                         </DropdownMenuItem>
@@ -213,8 +209,8 @@ export default function DoctorsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
-                                            No doctors found.
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            Žiadni doktori sa nenašli.
                                         </TableCell>
                                     </TableRow>
                                 )}

@@ -6,9 +6,9 @@ import DoctorsMainContent from "@/pages/Doctors/DosctorsMainContent"
 import ModeratorsMainContent from "@/pages/Moderators/ModeratorMainContent"
 import AdminsMainContent from "@/pages/Admins/AdminsMainContent"
 import PatientsMainContent from "@/pages/Patients/PatientsMainContent"
-import DomovPage from "@/pages/otherSidebarStuff/Domov.tsx";
-import AddPhotoPage from "@/pages/AddPhotoPage/AddPhoto.tsx";
-import AnalyzePhotosMainContent from "@/pages/AnalyzePhotos/AnalyzePhotosMainContent.tsx";
+import DomovPage from "@/pages/otherSidebarStuff/Domov"
+import AddPhotoPage from "@/pages/AddPhotoPage/AddPhoto"
+import AnalyzePhotosMainContent from "@/pages/AnalyzePhotos/AnalyzePhotosMainContent"
 
 import { RoleProtectedRoute } from "@/Security/RoleRoute"
 import { useAuth } from "@/Security/authContext"
@@ -20,14 +20,15 @@ function App() {
 
     return (
         <Routes>
+            {/* Login Route */}
             <Route path="/" element={<LoginForm />} />
-            <Route path="/" element={<Layout />}>
 
-
+            {/* Authenticated Layout Route */}
+            <Route element={<Layout />}>
                 <Route
                     path="doctors"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4]}>
                             <DoctorsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -35,7 +36,7 @@ function App() {
                 <Route
                     path="moderators"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "doktor"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4, 3]}>
                             <ModeratorsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -43,7 +44,7 @@ function App() {
                 <Route
                     path="admins"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4]}>
                             <AdminsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -51,7 +52,7 @@ function App() {
                 <Route
                     path="patients"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4, 3, 2]}>
                             <PatientsMainContent />
                         </RoleProtectedRoute>
                     }
@@ -59,7 +60,7 @@ function App() {
                 <Route
                     path="Domov"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor", "pacient"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4, 3, 2, 1]}>
                             <DomovPage />
                         </RoleProtectedRoute>
                     }
@@ -67,7 +68,7 @@ function App() {
                 <Route
                     path="AddPhoto"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4, 3, 2]}>
                             <AddPhotoPage />
                         </RoleProtectedRoute>
                     }
@@ -75,7 +76,7 @@ function App() {
                 <Route
                     path="Analyze"
                     element={
-                        <RoleProtectedRoute allowedRoles={["admin", "moderator", "doktor"]}>
+                        <RoleProtectedRoute allowedRoleIds={[4, 3, 2]}>
                             <AnalyzePhotosMainContent />
                         </RoleProtectedRoute>
                     }

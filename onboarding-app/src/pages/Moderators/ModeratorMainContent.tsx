@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,85 +20,75 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-
-type Moderator = {
-    id: number
-    name: string
-    email: string
-    phone: string
-    status: string
-    joinDate: string
-}
-
-const mockModerators: Moderator[] = [
-    {
-        id: 1,
-        name: "Jane dawd",
-        email: "jane.adwd@example.com",
-        phone: "+421 4697685132",
-        status: "Active",
-        joinDate: "Feb 5, 2023",
-    },
-    {
-        id: 2,
-        name: "Tom rer",
-        email: "tom.wefev@example.com",
-        phone: "+421 9164732684",
-        status: "On Leave",
-        joinDate: "Jul 10, 2022",
-    },
-]
+import { getModerators, getMyModerators, addModerator as addModeratorRequest, deleteModerator as deleteModeratorRequest, Moderator } from "@/api/moderatorApi"
 
 export default function ModeratorsMainContent() {
-    const [moderators, setModerators] = useState<Moderator[]>(mockModerators)
+    const [moderators, setModerators] = useState<Moderator[]>([])
+    const [loading, setLoading] = useState(true)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const { role } = useAuth()
+    const { roleId } = useAuth()
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (!["admin", "doktor"].includes(role || "")) {
+        if (![3, 4].includes(roleId ?? 0)) {
             navigate("/")
+            return
         }
-    }, [role, navigate])
 
-    if (!["admin", "doktor"].includes(role || "")) return null
+        console.log("📡 Fetching moderators...")
+
+        const fetchModerators = async () => {
+            try {
+                const data = roleId === 3 ? await getMyModerators() : await getModerators()
+                console.log("✅ Moderators received from API:", data)
+                setModerators(data)
+            } catch (err) {
+                console.error("❌ Failed to load moderators:", err)
+                setModerators([])
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchModerators()
+
+    }, [roleId, navigate])
 
 
-    const filteredModerators = moderators.filter(
-        (mod) =>
-            mod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            mod.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            mod.phone.includes(searchTerm)
+    if (![3, 4].includes(roleId ?? 0)) return null
+
+
+    const filteredModerators = (moderators || []).filter((mod) =>
+        `${mod.name} ${mod.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        mod.email.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const addModerator = (newMod: Omit<Moderator, "id" | "status" | "joinDate">) => {
-        setModerators([
-            ...moderators,
-            {
-                id: moderators.length + 1,
-                ...newMod,
-                status: "Active",
-                joinDate: new Date().toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                }),
-            },
-        ])
-        setIsAddOpen(false)
+    const addModerator = async (newMod: Omit<Moderator, "id">) => {
+        try {
+            if (roleId === 3) {
+                // Doctor adds user
+                await import("@/api/moderatorApi").then(({ addUser }) => addUser(newMod))
+            } else {
+                // Admin adds moderator
+                await addModeratorRequest(newMod)
+            }
+
+            const updated = roleId === 3 ? await getMyModerators() : await getModerators()
+            setModerators(updated)
+            setIsAddOpen(false)
+        } catch (err) {
+            console.error("❌ Failed to add moderator/user:", err)
+        }
     }
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case "Active":
-                return <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>
-            case "On Leave":
-                return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">On Leave</Badge>
-            case "Inactive":
-                return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Inactive</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
+
+    const handleDelete = async (id: number) => {
+        try {
+            await deleteModeratorRequest(id)
+            const updated = await getModerators()
+            setModerators(updated)
+        } catch (err) {
+            console.error("\u274C Failed to delete moderator:", err)
         }
     }
 
@@ -107,8 +96,8 @@ export default function ModeratorsMainContent() {
         <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Technici</h1>
-                    <p className="text-muted-foreground">Spravuj zoznam technikov.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Moderátori</h1>
+                    <p className="text-muted-foreground">Spravuj zoznam moderátorov.</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -116,7 +105,7 @@ export default function ModeratorsMainContent() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Hľadaj technikov..."
+                            placeholder="Hľadaj moderátorov..."
                             className="w-full pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -126,13 +115,13 @@ export default function ModeratorsMainContent() {
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Pridaj Technika
+                                Pridaj Moderátora
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Pridaj nového technika</DialogTitle>
-                                <DialogDescription>Vyplň údaje.</DialogDescription>
+                                <DialogTitle>Pridaj nového moderátora</DialogTitle>
+                                <DialogDescription>Vyplň údaje</DialogDescription>
                             </DialogHeader>
                             <form
                                 onSubmit={(e) => {
@@ -141,8 +130,8 @@ export default function ModeratorsMainContent() {
                                     const formData = new FormData(form)
                                     const newMod = {
                                         name: formData.get("name") as string,
+                                        surname: formData.get("surname") as string,
                                         email: formData.get("email") as string,
-                                        phone: formData.get("phone") as string,
                                     }
                                     addModerator(newMod)
                                 }}
@@ -153,17 +142,17 @@ export default function ModeratorsMainContent() {
                                         <Input id="name" name="name" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="phone" className="text-right">Tel. číslo</Label>
-                                        <Input id="phone" name="phone" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">Email</Label>
+                                        <Input id="email" name="email" type="email" className="col-span-3" required />
                                     </div>
                                 </div>
                                 <DialogFooter>
                                     <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Zruš</Button>
-                                    <Button type="submit">Ulož Technika</Button>
+                                    <Button type="submit">Ulož Moderátora</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -172,38 +161,38 @@ export default function ModeratorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Zotnam Technikov</CardTitle>
-                        <CardDescription>Prehľad všetkých registrovaných technikov.</CardDescription>
+                        <CardTitle>Zoznam moderátorov</CardTitle>
+                        <CardDescription>Prehľad všetkých registrovaných moderátorov</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-1/5">Meno</TableHead>
-                                    <TableHead className="w-1/5">Email</TableHead>
-                                    <TableHead className="w-1/5">Tel. číslo</TableHead>
-                                    <TableHead className="w-1/5">Status</TableHead>
-                                    <TableHead className="w-1/5">Dátum pridania</TableHead>
-                                    <TableHead className="w-1/5 text-right">Akcie</TableHead>
+                                    <TableHead className="w-1/2">Meno</TableHead>
+                                    <TableHead className="w-1/2">Email</TableHead>
+                                    <TableHead className="text-right">Akcie</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredModerators.length > 0 ? (
-                                    filteredModerators.map((mod) => (
-                                        <TableRow key={mod.id}>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            Načítavam moderátorov...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredModerators.length > 0 ? (
+                                    filteredModerators.map((mod, index) => (
+                                        <TableRow key={index}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={mod.name} />
-                                                        <AvatarFallback>{mod.name[0]}</AvatarFallback>
+                                                        <AvatarImage src={`/placeholder.svg`} alt={`${mod.name} ${mod.surname}`} />
+                                                        <AvatarFallback>{(mod.name[0] + mod.surname[0]).toUpperCase()}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{mod.name}</div>
+                                                    <div>{mod.name} {mod.surname}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{mod.email}</TableCell>
-                                            <TableCell>{mod.phone}</TableCell>
-                                            <TableCell>{getStatusBadge(mod.status)}</TableCell>
-                                            <TableCell>{mod.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -216,7 +205,7 @@ export default function ModeratorsMainContent() {
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Uprav</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600">
+                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(mod.id)}>
                                                             <Trash className="mr-2 h-4 w-4" />
                                                             <span>Vymaž</span>
                                                         </DropdownMenuItem>
@@ -227,8 +216,8 @@ export default function ModeratorsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center h-24">
-                                            Nebol nájdený technik
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            Nenašiel sa moderátor
                                         </TableCell>
                                     </TableRow>
                                 )}

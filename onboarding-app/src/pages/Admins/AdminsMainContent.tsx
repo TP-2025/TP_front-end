@@ -20,69 +20,73 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
+import { getAdmins, addAdmin as addAdminRequest, deleteAdmin as deleteAdminRequest } from "@/api/adminApi"
 
-type Admin = {
-    id: number
-    name: string
-    email: string
-    phone: string
-    joinDate: string
-}
+import { Admin } from "@/api/adminApi"
 
-const mockAdmins: Admin[] = [
-    {
-        id: 1,
-        name: "Alice Smith",
-        email: "alice.smith@example.com",
-        phone: "+421 912345678",
-        joinDate: "Jan 1, 2024",
-    },
-    {
-        id: 2,
-        name: "Bob Johnson",
-        email: "bob.johnson@example.com",
-        phone: "+421 987654321",
-        joinDate: "Feb 12, 2024",
-    },
-]
 
 export default function AdminsMainContent() {
-    const [admins, setAdmins] = useState<Admin[]>(mockAdmins)
+    const [admins, setAdmins] = useState<Admin[]>([])
+    const [loading, setLoading] = useState(true)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const { role } = useAuth()
+    const { roleId } = useAuth()
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (role !== "admin") {
+        if (roleId !== 4) {
             navigate("/")
+            return
         }
-    }, [role, navigate])
 
-    if (role !== "admin") return null
+        getAdmins()
+            .then((data) => {
+                console.log("getAdmins response:", data)
+                if (Array.isArray(data)) {
+                    setAdmins(data)
+                } else {
+                    console.error("❌ getAdmins() did not return an array:", data)
+                    setAdmins([])
+                }
+            })
+            .catch((err) => {
+                console.error("❌ Failed to load admins:", err)
+                setAdmins([])
+            })
+            .finally(() => setLoading(false))
+    }, [roleId, navigate])
 
-    const filteredAdmins = admins.filter(
-        (admin) =>
-            admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            admin.phone.includes(searchTerm)
+
+
+    if (roleId !== 4) return null
+
+    const filteredAdmins = admins.filter((admin) =>
+        `${admin.name} ${admin.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        admin.email.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const addAdmin = (newAdmin: Omit<Admin, "id" | "joinDate">) => {
-        setAdmins([
-            ...admins,
-            {
-                id: admins.length + 1,
-                ...newAdmin,
-                joinDate: new Date().toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                }),
-            },
-        ])
-        setIsAddOpen(false)
+    const addAdmin = async (newAdmin: Omit<Admin, "id">) => {
+
+        try {
+            await addAdminRequest(newAdmin)
+            const updatedList = await getAdmins()
+            setAdmins(updatedList)
+            setIsAddOpen(false)
+        } catch (error) {
+            console.error("❌ Failed to add admin:", error)
+        }
     }
+
+    const handleDelete = async (id: number) => {
+        try {
+            await deleteAdminRequest(id)
+            const updatedList = await getAdmins()
+            setAdmins(updatedList)
+        } catch (error) {
+            console.error("❌ Failed to delete admin:", error)
+        }
+    }
+
 
     return (
         <div className="flex-1 p-6 lg:p-8">
@@ -122,8 +126,8 @@ export default function AdminsMainContent() {
                                     const formData = new FormData(form)
                                     const newAdmin = {
                                         name: formData.get("name") as string,
+                                        surname: formData.get("surname") as string,
                                         email: formData.get("email") as string,
-                                        phone: formData.get("phone") as string,
                                     }
                                     addAdmin(newAdmin)
                                 }}
@@ -134,12 +138,12 @@ export default function AdminsMainContent() {
                                         <Input id="name" name="name" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="phone" className="text-right">Tel. číslo</Label>
-                                        <Input id="phone" name="phone" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">Email</Label>
+                                        <Input id="email" name="email" type="email" className="col-span-3" required />
                                     </div>
                                 </div>
                                 <DialogFooter>
@@ -160,29 +164,33 @@ export default function AdminsMainContent() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-1/4">Meno</TableHead>
-                                    <TableHead className="w-1/4">Email</TableHead>
-                                    <TableHead className="w-1/4">Tel. číslo</TableHead>
-                                    <TableHead className="w-1/4">Dátum pridania</TableHead>
-                                    <TableHead className="w-1/4 text-right">Akcie</TableHead>
+                                    <TableHead className="w-1/2">Meno</TableHead>
+                                    <TableHead className="w-1/2">Email</TableHead>
+                                    <TableHead className="text-right">Akcie</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredAdmins.length > 0 ? (
-                                    filteredAdmins.map((admin) => (
-                                        <TableRow key={admin.id}>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            Načítavam adminov...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredAdmins.length > 0 ? (
+                                    filteredAdmins.map((admin, index) => (
+                                        <TableRow key={index}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={admin.name} />
-                                                        <AvatarFallback>{admin.name[0]}</AvatarFallback>
+                                                        <AvatarImage src={`/placeholder.svg`} alt={`${admin.name} ${admin.surname}`} />
+                                                        <AvatarFallback>
+                                                            {(admin.name[0] + admin.surname[0]).toUpperCase()}
+                                                        </AvatarFallback>
                                                     </Avatar>
-                                                    <div>{admin.name}</div>
+                                                    <div>{admin.name} {admin.surname}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{admin.email}</TableCell>
-                                            <TableCell>{admin.phone}</TableCell>
-                                            <TableCell>{admin.joinDate}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -195,7 +203,7 @@ export default function AdminsMainContent() {
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             <span>Uprav</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600">
+                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(admin.id)}>
                                                             <Trash className="mr-2 h-4 w-4" />
                                                             <span>Vymaž</span>
                                                         </DropdownMenuItem>
@@ -206,7 +214,7 @@ export default function AdminsMainContent() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">
+                                        <TableCell colSpan={3} className="text-center h-24">
                                             Nenašiel sa admin
                                         </TableCell>
                                     </TableRow>

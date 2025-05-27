@@ -22,7 +22,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/Security/authContext"
-
+import { useLogout } from "@/pages/otherSidebarStuff/Logout"
 
 const bottomItem = {
     title: "Logout",
@@ -30,12 +30,9 @@ const bottomItem = {
     icon: LogOut,
 }
 
-import { useLogout } from "@/pages/otherSidebarStuff/Logout"
-
-
 export function AppSidebar() {
     const LogoutIcon = bottomItem.icon
-    const { role } = useAuth()
+    const { roleId } = useAuth() // ⬅️ use roleId instead of role
     const logout = useLogout()
 
     return (
@@ -86,7 +83,7 @@ export function AppSidebar() {
                         <SidebarGroupLabel className="text-sm text-gray-600">Používatelia</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                {role === "admin" && (
+                                {roleId === 4 && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild>
                                             <Link to="/admins" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
@@ -96,7 +93,7 @@ export function AppSidebar() {
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 )}
-                                {role === "admin" && (
+                                {roleId === 4 && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild>
                                             <Link to="/doctors" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
@@ -106,7 +103,7 @@ export function AppSidebar() {
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 )}
-                                {(role === "admin" || role === "doktor") &&(
+                                {(roleId === 4 || roleId === 3) && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild>
                                             <Link to="/moderators" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
@@ -116,7 +113,7 @@ export function AppSidebar() {
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 )}
-                                {(role === "admin" || role === "doktor" || role === "moderator") && (
+                                {(roleId === 4 || roleId === 3 || roleId === 2) && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild>
                                             <Link to="/patients" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">

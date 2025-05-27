@@ -13,25 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-
-const patients = [
-    { id: "1", name: "John Smith", email: "john.smith@example.com" },
-    { id: "2", name: "Sarah Johnson", email: "sarah.j@example.com" },
-    { id: "3", name: "Michael Brown", email: "m.brown@example.com" },
-    { id: "4", name: "Emily Davis", email: "emily.davis@example.com" },
-    { id: "5", name: "Robert Wilson", email: "r.wilson@example.com" },
-    { id: "6", name: "Jennifer Taylor", email: "j.taylor@example.com" },
-    { id: "7", name: "David Martinez", email: "d.martinez@example.com" },
-    { id: "8", name: "Lisa Anderson", email: "l.anderson@example.com" },
-    { id: "9", name: "James Thomas", email: "j.thomas@example.com" },
-    { id: "10", name: "Patricia White", email: "p.white@example.com" },
-]
-
-interface Patient {
-    id: string
-    name: string
-    email: string
-}
+import { getMyPatients, type Patient } from "@/api/patientApi"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface PhotoInfo {
     id: string
@@ -40,9 +23,11 @@ interface PhotoInfo {
     patient: Patient | null
     notes: string
     eye: "left" | "right" | null
+    device: string | null
 }
 
 export function PhotoUploader() {
+    const [patients, setPatients] = useState<Patient[]>([])
     const [photo, setPhoto] = useState<PhotoInfo | null>(null)
     const [isDragging, setIsDragging] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -53,6 +38,21 @@ export function PhotoUploader() {
     const [selectedEye, setSelectedEye] = useState<"left" | "right" | null>(null)
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState("")
+    const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
+
+    useEffect(() => {
+        const fetchPatients = async () => {
+            try {
+                const response = await getMyPatients()
+                setPatients(response)
+            } catch (error) {
+                console.error("❌ Failed to load patients:", error)
+                setPatients([])
+            }
+        }
+
+        fetchPatients()
+    }, [])
 
     // Filter patients based on input
     const filteredPatients = patients.filter((patient) => {
@@ -96,7 +96,6 @@ export function PhotoUploader() {
             return
         }
 
-
         if (photo?.url) {
             URL.revokeObjectURL(photo.url)
         }
@@ -108,6 +107,7 @@ export function PhotoUploader() {
             patient: selectedPatient,
             notes: notes,
             eye: selectedEye,
+            device: selectedDevice,
         }
 
         setPhoto(newPhoto)
@@ -125,6 +125,7 @@ export function PhotoUploader() {
             patient: selectedPatient,
             notes,
             eye: selectedEye,
+            device: selectedDevice,
         }
 
         setPhoto(updatedPhoto)
@@ -151,6 +152,7 @@ export function PhotoUploader() {
         setInputValue("")
         setNotes("")
         setSelectedEye(null)
+        setSelectedDevice(null)
         removePhoto()
     }
 
@@ -298,6 +300,20 @@ export function PhotoUploader() {
                                 </div>
                             </div>
                         </RadioGroup>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="device">Zariadenie</Label>
+                        <Select value={selectedDevice || ""} onValueChange={setSelectedDevice}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Vyber zariadenie..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="device1">Device 1</SelectItem>
+                                <SelectItem value="device2">Device 2</SelectItem>
+                                <SelectItem value="device3">Device 3</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-2">
