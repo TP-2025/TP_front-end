@@ -168,3 +168,264 @@ export default function DomovPage() {
         </div>
     )
 }
+```
+Zabudli ste heslo
+```javascript
+import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { i18n } from "@/lib/i18n"
+
+interface ForgotPasswordModalProps {
+    lang: "sk" | "en"
+    onClose: () => void
+}
+
+export const ForgotPasswordModal = ({ lang, onClose }: ForgotPasswordModalProps) => {
+    const [email, setEmail] = useState("")
+    const [isSending, setIsSending] = useState(false)
+    const t = i18n[lang]
+
+    const handleSend = async () => {
+        setIsSending(true)
+        try {
+            // Sem vlož logiku pre odoslanie žiadosti (napr. API call)
+            console.log("📨 Sending reset link to:", email)
+            // await fetch("/api/reset-password", { ... })
+
+            // Po úspešnom odoslaní zatvor modal
+            onClose()
+        } catch (error) {
+            console.error("❌ Error sending reset link:", error)
+            // Tu môžeš zobraziť alert alebo chybové hlásenie
+        } finally {
+            setIsSending(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-xl font-bold mb-4">{t.forgotPassword}</h2>
+                <p className="mb-4">{t.enterEmailForReset}</p>
+                <Input
+                    type="email"
+                    placeholder="m@example.com"
+                    className="mb-4"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <div className="flex justify-end gap-3">
+                    <Button onClick={onClose} variant="ghost">
+                        {t.cancel}
+                    </Button>
+                    <Button onClick={handleSend} disabled={isSending}>
+                        {isSending ? "..." : t.sendResetLink}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+```
+upravený login
+```javascript
+import React, { useState } from "react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+import { useNavigate } from "react-router-dom"
+
+import { DropdownRole } from "@/components/loginRole"
+import { Help } from "@/components/Help"
+import { i18n } from "@/lib/i18n"
+
+import { useAuth } from "@/Security/authContext"
+import type { Role } from "@/Security/authContext"
+
+import { ForgotPasswordModal } from "@/components/ForgotPasswordModal"
+
+
+export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
+    const [lang, setLang] = useState<"sk" | "en">("sk")
+    const [role, setRole] = useState(i18n[lang].chooseRole)
+    const { setRole: setAuthRole } = useAuth()
+    const [passwordVisible, setPasswordVisible] = useState(false)
+    const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false)
+    const navigate = useNavigate()
+
+    const t = i18n[lang] // aktuálne preklady
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        const form = e.currentTarget as HTMLFormElement
+        const email = (form.elements.namedItem("email") as HTMLInputElement).value
+        const password = (form.elements.namedItem("password") as HTMLInputElement).value
+
+        if (role === t.chooseRole) {
+            alert(t.selectRoleAlert)
+            return
+        }
+
+        console.log("📦 Submitted values:", {
+            email,
+            password,
+            role
+        })
+
+        if (password === "admin") {
+            setAuthRole("admin")
+            localStorage.setItem("role", "admin")
+        } else {
+            setAuthRole(role as Role)
+            localStorage.setItem("role", role)
+        }
+
+        navigate("/Domov")
+    }
+
+    const toggleLang = () => {
+        const newLang = lang === "sk" ? "en" : "sk"
+        setLang(newLang)
+        setRole(i18n[newLang].chooseRole)
+    }
+
+    return (
+        <div className={cn("flex w-full h-screen items-center justify-start px-65", className)} {...props}>
+            <div className="flex w-full max-w-7xl items-center justify-between gap-50">
+                <div className="flex w-full max-w-5xl items-center justify-center">
+                    <img src="/LogoSkupinovy.png"
+                         alt="OcuNet Logo"
+                         className="w-80 h-80 mb-10 object-contain rounded-xl" />
+                    <h1 className="text-6xl font-bold text-gray-800 tracking-tight">OcuNet</h1>
+                </div>
+
+                <Card className="w-full max-w-md p-5 shadow-lg border rounded-xl bg-gray-100">
+                    <CardHeader>
+                        <CardTitle className="text-2xl">{t.login}</CardTitle>
+                        <CardDescription>{t.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit}>
+                            <div className="flex flex-col gap-6">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="role">{t.role}</Label>
+                                    <DropdownRole role={role} setRole={setRole} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">{t.email}</Label>
+                                    <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+                                </div>
+                                <div className="grid gap-2">
+                                    <div className="flex items-center">
+                                        <Label htmlFor="password">{t.password}</Label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForgotPasswordModal(true)}
+                                            className="ml-auto text-sm text-blue-600 underline hover:no-underline"
+                                        >
+                                            {t.forgotPassword}
+                                        </button>
+                                    </div>
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type={passwordVisible ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                            onClick={() => setPasswordVisible(!passwordVisible)}
+                                        >
+                                            {passwordVisible ? (
+                                                <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg>
+                                            ) : (
+                                                <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between w-full gap-3">
+                                    <Button type="submit" className="w-40">{t.login}</Button>
+                                    <Button type="button" onClick={toggleLang} className="w-25 bg-gray-300 text-gray-800 hover:bg-gray-400">
+                                        {t.language}
+                                    </Button>
+                                    <Help lang={lang} />
+                                </div>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+            {showForgotPasswordModal && (
+                <ForgotPasswordModal lang={lang} onClose={() => setShowForgotPasswordModal(false)} />
+            )}
+        </div>
+    )
+}
+```
+Jazyk
+```javascript
+// i18n.ts (umiestni do src/utils alebo src/lib)
+
+export const i18n = {
+    en: {
+        login: "Login",
+        description: "Enter your email below to login to your account",
+        role: "Role",
+        email: "E-mail",
+        password: "Password",
+        forgotPassword: "Forgot your password?",
+        language: "Language",
+        help: "Help",
+        chooseRole: "Choose role",
+        loginSuccess: "✅ Form submitted successfully! Check the console.",
+        selectRoleAlert: "❗ Please select a role before logging in.",
+        enterEmailForReset: "Enter your email address to receive a reset link.",
+        cancel: "Cancel",
+        sendResetLink: "Send reset link",
+        helpTitle: "Help",
+        Help: {
+            role: "Role: Choose your role (Patient, Moderator).",
+            email: "Email: Enter your registered email (ID).",
+            emailNote: "Your ID was sent to your email by your doctor.",
+            password: "Password: Enter your password.",
+            passwordNote: "Your password was auto-generated and sent to your email. If lost, click 'Forgot your password?'",
+            login: "Login: Click to log in.",
+        },
+    },
+    sk: {
+        login: "Prihlásenie",
+        description: "Zadajte svoj e-mail na prihlásenie do účtu",
+        role: "Rola",
+        email: "E-mail",
+        password: "Heslo",
+        forgotPassword: "Zabudli ste heslo?",
+        language: "Jazyk",
+        help: "Pomoc",
+        chooseRole: "Vyber rolu",
+        loginSuccess: "✅ Úspešne odoslané! Skontrolujte konzolu.",
+        selectRoleAlert: "❗ Pred prihlásením vyberte rolu.",
+        enterEmailForReset: "Zadajte svoj e-mail pre zaslanie odkazu na obnovenie hesla.",
+        cancel: "Zrušiť",
+        sendResetLink: "Odoslať odkaz",
+        helpTitle: "Pomoc",
+        Help: {
+            role: "Rola: Vyber svoju rolu (Pacient, Moderátor).",
+            email: "E-mail: Zadaj svoj registrovaný e-mail (ID).",
+            emailNote: "ID Vám bolo zaslané Vašim lekárom na e-mail.",
+            password: "Heslo: Zadaj svoje heslo.",
+            passwordNote: "Heslo bolo automaticky vygenerované a zaslané na e-mail. Ak ste ho stratili, kliknite na 'Zabudli ste heslo?'",
+            login: "Prihlásenie: Kliknutím sa prihlásite.",
+        },
+    },
+}
+```
