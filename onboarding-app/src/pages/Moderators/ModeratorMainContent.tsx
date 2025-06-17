@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,15 +20,31 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-import { getModerators, getMyModerators, addModerator as addModeratorRequest, deleteModerator as deleteModeratorRequest, Moderator } from "@/api/moderatorApi"
+import {
+    getModerators,
+    getMyModerators,
+    addModerator as addModeratorRequest,
+    deleteModerator as deleteModeratorRequest,
+    type Moderator,
+} from "@/api/moderatorApi"
 
-export default function ModeratorsMainContent() {
-    const [moderators, setModerators] = useState<Moderator[]>([])
+export default function TechniciansMainContent() {
+    const [technicians, setTechnicians] = useState<Moderator[]>([])
     const [loading, setLoading] = useState(true)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const { roleId } = useAuth()
     const navigate = useNavigate()
+    const [isAddingTechnician, setIsAddingTechnician] = useState(false)
+    const [formMessage, setFormMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
+    const [deletingTechnicianId, setDeletingTechnicianId] = useState<number | null>(null)
+    const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
 
     useEffect(() => {
         if (![3, 4].includes(roleId ?? 0)) {
@@ -36,59 +52,78 @@ export default function ModeratorsMainContent() {
             return
         }
 
-        console.log("📡 Fetching moderators...")
-
-        const fetchModerators = async () => {
+        const fetchTechnicians = async () => {
             try {
+                console.log("🔄 Fetching technicians...")
                 const data = roleId === 3 ? await getMyModerators() : await getModerators()
-                console.log("✅ Moderators received from API:", data)
-                setModerators(data)
+                console.log("✅ Technicians loaded:", data)
+                setTechnicians(data)
             } catch (err) {
-                console.error("❌ Failed to load moderators:", err)
-                setModerators([])
+                console.error("❌ Failed to load technicians:", err)
+                setTechnicians([])
             } finally {
                 setLoading(false)
             }
         }
-        fetchModerators()
-
+        fetchTechnicians()
     }, [roleId, navigate])
-
 
     if (![3, 4].includes(roleId ?? 0)) return null
 
-
-    const filteredModerators = (moderators || []).filter((mod) =>
-        `${mod.name} ${mod.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        mod.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredTechnicians = (technicians || []).filter(
+        (tech) =>
+            `${tech.name} ${tech.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            tech.email.toLowerCase().includes(searchTerm.toLowerCase()),
     )
 
-    const addModerator = async (newMod: Omit<Moderator, "id">) => {
+    const addTechnician = async (newTech: Omit<Moderator, "id">) => {
+        setIsAddingTechnician(true)
+        setFormMessage({ type: null, text: "" })
         try {
+            console.log("➕ Adding technician:", newTech)
             if (roleId === 3) {
-                // Doctor adds user
-                await import("@/api/moderatorApi").then(({ addUser }) => addUser(newMod))
+                await import("@/api/moderatorApi").then(({ addUser }) => addUser(newTech))
             } else {
-                // Admin adds moderator
-                await addModeratorRequest(newMod)
+                await addModeratorRequest(newTech)
             }
 
             const updated = roleId === 3 ? await getMyModerators() : await getModerators()
-            setModerators(updated)
-            setIsAddOpen(false)
+            console.log("✅ Technicians updated after add:", updated)
+            setTechnicians(updated)
+            setFormMessage({ type: "success", text: "Technik bol úspešne pridaný!" })
+            // Close dialog after 1.5 seconds to show success message
+            setTimeout(() => {
+                setIsAddOpen(false)
+                setFormMessage({ type: null, text: "" })
+            }, 1500)
         } catch (err) {
-            console.error("❌ Failed to add moderator/user:", err)
+            console.error("❌ Failed to add technician/user:", err)
+            setFormMessage({ type: "error", text: "Nepodarilo sa pridať technika. Skúste to znovu." })
+        } finally {
+            setIsAddingTechnician(false)
         }
     }
 
-
     const handleDelete = async (id: number) => {
+        setDeletingTechnicianId(id)
+        setDeleteMessage({ type: null, text: "" })
         try {
             await deleteModeratorRequest(id)
             const updated = await getModerators()
-            setModerators(updated)
+            setTechnicians(updated)
+            setDeleteMessage({ type: "success", text: "Technik bol úspešne vymazaný!" })
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 3000)
         } catch (err) {
-            console.error("\u274C Failed to delete moderator:", err)
+            console.error("❌ Failed to delete technician:", err)
+            setDeleteMessage({ type: "error", text: "Nepodarilo sa vymazať technika. Skúste to znovu." })
+            // Clear error message after 5 seconds
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 5000)
+        } finally {
+            setDeletingTechnicianId(null)
         }
     }
 
@@ -96,8 +131,8 @@ export default function ModeratorsMainContent() {
         <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Moderátori</h1>
-                    <p className="text-muted-foreground">Spravuj zoznam moderátorov.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Technici</h1>
+                    <p className="text-muted-foreground">Spravuj zoznam technikov.</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -105,54 +140,106 @@ export default function ModeratorsMainContent() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Hľadaj moderátorov..."
+                            placeholder="Hľadaj technikov..."
                             className="w-full pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    {deleteMessage.type && (
+                        <div
+                            className={`p-3 rounded-md text-sm ${
+                                deleteMessage.type === "success"
+                                    ? "bg-green-50 text-green-800 border border-green-200"
+                                    : "bg-red-50 text-red-800 border border-red-200"
+                            }`}
+                        >
+                            {deleteMessage.text}
+                        </div>
+                    )}
+                    <Dialog
+                        open={isAddOpen}
+                        onOpenChange={(open) => {
+                            setIsAddOpen(open)
+                            if (open) {
+                                setFormMessage({ type: null, text: "" })
+                            }
+                        }}
+                    >
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Pridaj Moderátora
+                                Pridaj Technika
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Pridaj nového moderátora</DialogTitle>
+                                <DialogTitle>Pridaj nového technika</DialogTitle>
                                 <DialogDescription>Vyplň údaje</DialogDescription>
                             </DialogHeader>
+                            {formMessage.type && (
+                                <div
+                                    className={`p-3 rounded-md text-sm ${
+                                        formMessage.type === "success"
+                                            ? "bg-green-50 text-green-800 border border-green-200"
+                                            : "bg-red-50 text-red-800 border border-red-200"
+                                    }`}
+                                >
+                                    {formMessage.text}
+                                </div>
+                            )}
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
                                     const form = e.currentTarget as HTMLFormElement
                                     const formData = new FormData(form)
-                                    const newMod = {
+                                    const newTech = {
                                         name: formData.get("name") as string,
                                         surname: formData.get("surname") as string,
                                         email: formData.get("email") as string,
                                     }
-                                    addModerator(newMod)
+                                    addTechnician(newTech)
                                 }}
                             >
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Meno</Label>
-                                        <Input id="name" name="name" className="col-span-3" required />
+                                        <Label htmlFor="name" className="text-right">
+                                            Meno
+                                        </Label>
+                                        <Input id="name" name="name" className="col-span-3" required disabled={isAddingTechnician} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
-                                        <Input id="surname" name="surname" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">
+                                            Priezvisko
+                                        </Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required disabled={isAddingTechnician} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">
+                                            Email
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            className="col-span-3"
+                                            required
+                                            disabled={isAddingTechnician}
+                                        />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Zruš</Button>
-                                    <Button type="submit">Ulož Moderátora</Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsAddOpen(false)}
+                                        disabled={isAddingTechnician}
+                                    >
+                                        Zruš
+                                    </Button>
+                                    <Button type="submit" disabled={isAddingTechnician}>
+                                        {isAddingTechnician ? "Pridávam..." : "Ulož Technika"}
+                                    </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -161,8 +248,8 @@ export default function ModeratorsMainContent() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Zoznam moderátorov</CardTitle>
-                        <CardDescription>Prehľad všetkých registrovaných moderátorov</CardDescription>
+                        <CardTitle>Zoznam technikov</CardTitle>
+                        <CardDescription>Prehľad všetkých registrovaných technikov</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -177,22 +264,24 @@ export default function ModeratorsMainContent() {
                                 {loading ? (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center h-24">
-                                            Načítavam moderátorov...
+                                            Načítavam technikov...
                                         </TableCell>
                                     </TableRow>
-                                ) : filteredModerators.length > 0 ? (
-                                    filteredModerators.map((mod, index) => (
-                                        <TableRow key={index}>
+                                ) : filteredTechnicians.length > 0 ? (
+                                    filteredTechnicians.map((tech, index) => (
+                                        <TableRow key={tech.id || index}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`/placeholder.svg`} alt={`${mod.name} ${mod.surname}`} />
-                                                        <AvatarFallback>{(mod.name[0] + mod.surname[0]).toUpperCase()}</AvatarFallback>
+                                                        <AvatarImage src={`/placeholder.svg`} alt={`${tech.name} ${tech.surname}`} />
+                                                        <AvatarFallback>{(tech.name[0] + tech.surname[0]).toUpperCase()}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{mod.name} {mod.surname}</div>
+                                                    <div>
+                                                        {tech.name} {tech.surname}
+                                                    </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{mod.email}</TableCell>
+                                            <TableCell>{tech.email}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -201,14 +290,24 @@ export default function ModeratorsMainContent() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Uprav</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(mod.id)}>
-                                                            <Trash className="mr-2 h-4 w-4" />
-                                                            <span>Vymaž</span>
-                                                        </DropdownMenuItem>
+                                                        {roleId === 3 ? (
+                                                            <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                <div className="flex flex-col">
+                                                                    <span>Vymaž</span>
+                                                                    <small className="text-xs text-muted-foreground">Kontaktuj admina</small>
+                                                                </div>
+                                                            </DropdownMenuItem>
+                                                        ) : (
+                                                            <DropdownMenuItem
+                                                                className="text-red-600"
+                                                                onClick={() => handleDelete(tech.id)}
+                                                                disabled={deletingTechnicianId === tech.id}
+                                                            >
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                <span>{deletingTechnicianId === tech.id ? "Mažem..." : "Vymaž"}</span>
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -217,7 +316,7 @@ export default function ModeratorsMainContent() {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center h-24">
-                                            Nenašiel sa moderátor
+                                            Technik nebol nájdený.
                                         </TableCell>
                                     </TableRow>
                                 )}

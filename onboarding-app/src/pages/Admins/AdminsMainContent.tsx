@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,10 +20,7 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-import { getAdmins, addAdmin as addAdminRequest, deleteAdmin as deleteAdminRequest } from "@/api/adminApi"
-
-import { Admin } from "@/api/adminApi"
-
+import { getAdmins, addAdmin as addAdminRequest, deleteAdmin as deleteAdminRequest, type Admin } from "@/api/adminApi"
 
 export default function AdminsMainContent() {
     const [admins, setAdmins] = useState<Admin[]>([])
@@ -32,6 +29,16 @@ export default function AdminsMainContent() {
     const [searchTerm, setSearchTerm] = useState("")
     const { roleId } = useAuth()
     const navigate = useNavigate()
+    const [isAddingAdmin, setIsAddingAdmin] = useState(false)
+    const [formMessage, setFormMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
+    const [deletingAdminId, setDeletingAdminId] = useState<number | null>(null)
+    const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
 
     useEffect(() => {
         if (roleId !== 4) {
@@ -56,37 +63,62 @@ export default function AdminsMainContent() {
             .finally(() => setLoading(false))
     }, [roleId, navigate])
 
-
-
     if (roleId !== 4) return null
 
-    const filteredAdmins = admins.filter((admin) =>
-        `${admin.name} ${admin.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredAdmins = admins.filter(
+        (admin) =>
+            `${admin.name} ${admin.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            admin.email.toLowerCase().includes(searchTerm.toLowerCase()),
     )
 
     const addAdmin = async (newAdmin: Omit<Admin, "id">) => {
-
+        setIsAddingAdmin(true)
+        setFormMessage({ type: null, text: "" })
         try {
+            console.log("➕ Adding admin:", newAdmin)
             await addAdminRequest(newAdmin)
             const updatedList = await getAdmins()
+            console.log("✅ Admins updated after add:", updatedList)
             setAdmins(updatedList)
-            setIsAddOpen(false)
+            setFormMessage({ type: "success", text: "Admin bol úspešne pridaný!" })
+            // Close dialog after 1.5 seconds to show success message
+            setTimeout(() => {
+                setIsAddOpen(false)
+                setFormMessage({ type: null, text: "" })
+            }, 1500)
         } catch (error) {
             console.error("❌ Failed to add admin:", error)
+            setFormMessage({ type: "error", text: "Nepodarilo sa pridať admina. Skúste to znovu." })
+        } finally {
+            setIsAddingAdmin(false)
         }
     }
 
     const handleDelete = async (id: number) => {
+        setDeletingAdminId(id)
+        setDeleteMessage({ type: null, text: "" })
         try {
+            console.log("🗑️ Deleting admin with ID:", id)
             await deleteAdminRequest(id)
             const updatedList = await getAdmins()
+            console.log("✅ Admins updated after delete:", updatedList)
             setAdmins(updatedList)
+            setDeleteMessage({ type: "success", text: "Admin bol úspešne vymazaný!" })
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 3000)
         } catch (error) {
             console.error("❌ Failed to delete admin:", error)
+            setDeleteMessage({ type: "error", text: "Nepodarilo sa vymazať admina. Skúste to znovu." })
+            // Clear error message after 5 seconds
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 5000)
+        } finally {
+            setDeletingAdminId(null)
         }
     }
-
 
     return (
         <div className="flex-1 p-6 lg:p-8">
@@ -107,7 +139,26 @@ export default function AdminsMainContent() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    {deleteMessage.type && (
+                        <div
+                            className={`p-3 rounded-md text-sm ${
+                                deleteMessage.type === "success"
+                                    ? "bg-green-50 text-green-800 border border-green-200"
+                                    : "bg-red-50 text-red-800 border border-red-200"
+                            }`}
+                        >
+                            {deleteMessage.text}
+                        </div>
+                    )}
+                    <Dialog
+                        open={isAddOpen}
+                        onOpenChange={(open) => {
+                            setIsAddOpen(open)
+                            if (open) {
+                                setFormMessage({ type: null, text: "" })
+                            }
+                        }}
+                    >
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
@@ -119,6 +170,17 @@ export default function AdminsMainContent() {
                                 <DialogTitle>Pridaj nového admina</DialogTitle>
                                 <DialogDescription>Vyplň údaje</DialogDescription>
                             </DialogHeader>
+                            {formMessage.type && (
+                                <div
+                                    className={`p-3 rounded-md text-sm ${
+                                        formMessage.type === "success"
+                                            ? "bg-green-50 text-green-800 border border-green-200"
+                                            : "bg-red-50 text-red-800 border border-red-200"
+                                    }`}
+                                >
+                                    {formMessage.text}
+                                </div>
+                            )}
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
@@ -134,21 +196,38 @@ export default function AdminsMainContent() {
                             >
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Meno</Label>
-                                        <Input id="name" name="name" className="col-span-3" required />
+                                        <Label htmlFor="name" className="text-right">
+                                            Meno
+                                        </Label>
+                                        <Input id="name" name="name" className="col-span-3" required disabled={isAddingAdmin} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
-                                        <Input id="surname" name="surname" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">
+                                            Priezvisko
+                                        </Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required disabled={isAddingAdmin} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">
+                                            Email
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            className="col-span-3"
+                                            required
+                                            disabled={isAddingAdmin}
+                                        />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Zruš</Button>
-                                    <Button type="submit">Ulož Admina</Button>
+                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} disabled={isAddingAdmin}>
+                                        Zruš
+                                    </Button>
+                                    <Button type="submit" disabled={isAddingAdmin}>
+                                        {isAddingAdmin ? "Pridávam..." : "Ulož Admina"}
+                                    </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -178,16 +257,16 @@ export default function AdminsMainContent() {
                                     </TableRow>
                                 ) : filteredAdmins.length > 0 ? (
                                     filteredAdmins.map((admin, index) => (
-                                        <TableRow key={index}>
+                                        <TableRow key={admin.id || index}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarImage src={`/placeholder.svg`} alt={`${admin.name} ${admin.surname}`} />
-                                                        <AvatarFallback>
-                                                            {(admin.name[0] + admin.surname[0]).toUpperCase()}
-                                                        </AvatarFallback>
+                                                        <AvatarFallback>{(admin.name[0] + admin.surname[0]).toUpperCase()}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{admin.name} {admin.surname}</div>
+                                                    <div>
+                                                        {admin.name} {admin.surname}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{admin.email}</TableCell>
@@ -199,13 +278,13 @@ export default function AdminsMainContent() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Uprav</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(admin.id)}>
+                                                        <DropdownMenuItem
+                                                            className="text-red-600"
+                                                            onClick={() => handleDelete(admin.id)}
+                                                            disabled={deletingAdminId === admin.id}
+                                                        >
                                                             <Trash className="mr-2 h-4 w-4" />
-                                                            <span>Vymaž</span>
+                                                            <span>{deletingAdminId === admin.id ? "Mažem..." : "Vymaž"}</span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>

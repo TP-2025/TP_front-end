@@ -19,14 +19,15 @@ export const getPatients = async (): Promise<Patient[]> => {
     console.log("📦 Raw patients response:", res.data)
 
     return res.data.patients.map((p) => ({
-        id: p.patient_id,
+        id: p.id,
         name: p.name,
         surname: p.surname,
         email: p.email,
-        doctor_id: p.medic_id,
-        birth_date: p.birth_date,
+        doctor_id: p.medic_id ?? 0,
+        birth_date: String(p.year_of_birth),
         sex: p.sex,
     }))
+
 }
 
 export const getMyPatients = async (): Promise<Patient[]> => {
@@ -34,17 +35,21 @@ export const getMyPatients = async (): Promise<Patient[]> => {
     console.log("📦 Raw patients response:", res.data)
 
     return res.data.patients.map((p) => ({
-        id: p.patient_id,
+        id: p.id,
         name: p.name,
         surname: p.surname,
         email: p.email,
-        doctor_id: p.medic_id,
-        birth_date: p.birth_date,
+        doctor_id: p.medic_id ?? 0,
+        birth_date: String(p.year_of_birth),
         sex: p.sex,
     }))
 }
 
 export const removePatient = async (id: number): Promise<void> => {
-    console.log("🗑️ Sending delete request for patient:", { id }) // Debug log
     await api.delete("/user/deletePatient", { data: { id } })
 }
+
+export const deletePatient = async (id: number): Promise<void> => {
+    await api.delete("/admin/deletePatient", { data: { id } })
+}
+

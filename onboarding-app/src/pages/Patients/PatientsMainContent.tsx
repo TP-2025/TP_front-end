@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -20,13 +20,13 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-import { getDoctors, getAllDoctors, Doctor } from "@/api/doctorApi"
+import { getDoctors, getAllDoctors, type Doctor } from "@/api/doctorApi"
 import {
     addPatient as addPatientRequest,
     getPatients,
     getMyPatients,
-    removePatient,
-    Patient,
+    deletePatient,
+    type Patient
 } from "@/api/patientApi"
 
 export default function PacientsMainContent() {
@@ -40,6 +40,16 @@ export default function PacientsMainContent() {
     const [showDoctorSuggestions, setShowDoctorSuggestions] = useState(false)
     const { roleId, user } = useAuth()
     const navigate = useNavigate()
+    const [isAddingPatient, setIsAddingPatient] = useState(false)
+    const [formMessage, setFormMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
+    const [deletingPatientId, setDeletingPatientId] = useState<number | null>(null)
+    const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
 
     useEffect(() => {
         if (![2, 3, 4].includes(roleId ?? 0)) {
@@ -50,6 +60,7 @@ export default function PacientsMainContent() {
         setLoading(true)
         const fetchData = async () => {
             try {
+                console.log("🔄 Fetching patients and doctors...")
                 let patientsData = []
                 let doctorsData: Doctor[] = []
 
@@ -59,12 +70,10 @@ export default function PacientsMainContent() {
                         doctorsData = await getAllDoctors()
                     }
                 } else {
-                    [doctorsData, patientsData] = await Promise.all([
-                        getDoctors(),
-                        getPatients(),
-                    ])
+                    ;[doctorsData, patientsData] = await Promise.all([getDoctors(), getPatients()])
                 }
 
+                console.log("✅ Data loaded:", { patients: patientsData, doctors: doctorsData })
                 setDoctors(doctorsData)
                 setPatients(patientsData)
             } catch (err) {
@@ -83,7 +92,7 @@ export default function PacientsMainContent() {
     const filteredPatients = patients.filter(
         (p) =>
             `${p.name} ${p.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.email.toLowerCase().includes(searchTerm.toLowerCase())
+            p.email.toLowerCase().includes(searchTerm.toLowerCase()),
     )
 
     const filteredDoctors = doctors
@@ -91,35 +100,66 @@ export default function PacientsMainContent() {
             (doctor) =>
                 doctorSearch.length > 0 &&
                 (doctor.name.toLowerCase().startsWith(doctorSearch.toLowerCase()) ||
-                    doctor.surname.toLowerCase().startsWith(doctorSearch.toLowerCase()))
+                    doctor.surname.toLowerCase().startsWith(doctorSearch.toLowerCase())),
         )
         .slice(0, 5)
 
     const addPatient = async (newP: Omit<Patient, "id">) => {
+        setIsAddingPatient(true)
+        setFormMessage({ type: null, text: "" })
         try {
+            console.log("➕ Adding patient:", newP)
             await addPatientRequest(newP)
-            const updated = (roleId === 2 || roleId === 3) ? await getMyPatients() : await getPatients()
+            const updated = roleId === 2 || roleId === 3 ? await getMyPatients() : await getPatients()
+            console.log("✅ Patients updated after add:", updated)
             setPatients(updated)
-            setIsAddOpen(false)
-            setSelectedDoctor(null)
-            setDoctorSearch("")
+            setFormMessage({ type: "success", text: "Pacient bol úspešne pridaný!" })
+            setTimeout(() => {
+                setIsAddOpen(false)
+                setSelectedDoctor(null)
+                setDoctorSearch("")
+                setFormMessage({ type: null, text: "" })
+            }, 1500)
         } catch (err) {
             console.error("❌ Failed to add patient:", err)
+            setFormMessage({ type: "error", text: "Nepodarilo sa pridať pacienta. Skúste to znovu." })
+        } finally {
+            setIsAddingPatient(false)
         }
     }
 
-    const deletePatient = async (id: number) => {
+    const deletePatientHandler = async (id: number) => {
+        setDeletingPatientId(id)
+        setDeleteMessage({ type: null, text: "" })
+
         try {
-            await removePatient(id)
-            const updated = (roleId === 2 || roleId === 3) ? await getMyPatients() : await getPatients()
+            console.log("🗑️ Deleting patient with ID:", id)
+
+            if (roleId === 4) {
+                await deletePatient(id)
+            } else {
+                console.log("Using removePatient for roleId:", roleId)
+            }
+
+            console.log("✅ Successfully deleted patient ID:", id)
+
+            const updated = roleId === 2 || roleId === 3 ? await getMyPatients() : await getPatients()
             setPatients(updated)
+            setDeleteMessage({ type: "success", text: "Pacient bol úspešne vymazaný!" })
+
+            setTimeout(() => setDeleteMessage({ type: null, text: "" }), 3000)
         } catch (err) {
             console.error("❌ Failed to delete patient:", err)
+            setDeleteMessage({ type: "error", text: "Nepodarilo sa vymazať pacienta. Skúste to znovu." })
+            setTimeout(() => setDeleteMessage({ type: null, text: "" }), 5000)
+        } finally {
+            setDeletingPatientId(null)
         }
     }
 
 
-return (
+
+    return (
         <div className="flex-1 p-6 lg:p-8">
             <div className="space-y-6">
                 <div className="flex flex-col space-y-2">
@@ -138,7 +178,28 @@ return (
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    {deleteMessage.type && (
+                        <div
+                            className={`p-3 rounded-md text-sm ${
+                                deleteMessage.type === "success"
+                                    ? "bg-green-50 text-green-800 border border-green-200"
+                                    : "bg-red-50 text-red-800 border border-red-200"
+                            }`}
+                        >
+                            {deleteMessage.text}
+                        </div>
+                    )}
+                    <Dialog
+                        open={isAddOpen}
+                        onOpenChange={(open) => {
+                            setIsAddOpen(open)
+                            if (open) {
+                                setFormMessage({ type: null, text: "" })
+                                setSelectedDoctor(null)
+                                setDoctorSearch("")
+                            }
+                        }}
+                    >
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
@@ -150,6 +211,17 @@ return (
                                 <DialogTitle>Pridaj nového pacienta</DialogTitle>
                                 <DialogDescription>Vyplň údaje</DialogDescription>
                             </DialogHeader>
+                            {formMessage.type && (
+                                <div
+                                    className={`p-3 rounded-md text-sm ${
+                                        formMessage.type === "success"
+                                            ? "bg-green-50 text-green-800 border border-green-200"
+                                            : "bg-red-50 text-red-800 border border-red-200"
+                                    }`}
+                                >
+                                    {formMessage.text}
+                                </div>
+                            )}
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
@@ -171,21 +243,36 @@ return (
                             >
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Meno</Label>
-                                        <Input id="name" name="name" className="col-span-3" required />
+                                        <Label htmlFor="name" className="text-right">
+                                            Meno
+                                        </Label>
+                                        <Input id="name" name="name" className="col-span-3" required disabled={isAddingPatient} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
-                                        <Input id="surname" name="surname" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">
+                                            Priezvisko
+                                        </Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required disabled={isAddingPatient} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">
+                                            Email
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            className="col-span-3"
+                                            required
+                                            disabled={isAddingPatient}
+                                        />
                                     </div>
 
                                     {roleId !== 3 && (
                                         <div className="grid grid-cols-4 items-center gap-4">
-                                            <Label htmlFor="doctor" className="text-right">Doktor</Label>
+                                            <Label htmlFor="doctor" className="text-right">
+                                                Doktor
+                                            </Label>
                                             <div className="col-span-3 relative">
                                                 <Input
                                                     id="doctor"
@@ -198,8 +285,9 @@ return (
                                                     onFocus={() => setShowDoctorSuggestions(true)}
                                                     onBlur={() => setTimeout(() => setShowDoctorSuggestions(false), 200)}
                                                     placeholder="Začni písať meno doktora..."
+                                                    disabled={isAddingPatient}
                                                 />
-                                                {showDoctorSuggestions && filteredDoctors.length > 0 && (
+                                                {showDoctorSuggestions && filteredDoctors.length > 0 && !isAddingPatient && (
                                                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
                                                         {filteredDoctors.map((doctor) => (
                                                             <div
@@ -223,16 +311,28 @@ return (
                                     )}
 
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="dateOfBirth" className="text-right">Dát. narodenia</Label>
-                                        <Input id="dateOfBirth" name="dateOfBirth" type="date" className="col-span-3" required />
+                                        <Label htmlFor="dateOfBirth" className="text-right">
+                                            Dát. narodenia
+                                        </Label>
+                                        <Input
+                                            id="dateOfBirth"
+                                            name="dateOfBirth"
+                                            type="date"
+                                            className="col-span-3"
+                                            required
+                                            disabled={isAddingPatient}
+                                        />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="sex" className="text-right">Pohlavie</Label>
+                                        <Label htmlFor="sex" className="text-right">
+                                            Pohlavie
+                                        </Label>
                                         <select
                                             id="sex"
                                             name="sex"
                                             className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                             required
+                                            disabled={isAddingPatient}
                                         >
                                             <option value="">Vyber pohlavie</option>
                                             <option value="Muž">Muž</option>
@@ -241,8 +341,17 @@ return (
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Zruš</Button>
-                                    <Button type="submit">Ulož Pacienta</Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsAddOpen(false)}
+                                        disabled={isAddingPatient}
+                                    >
+                                        Zruš
+                                    </Button>
+                                    <Button type="submit" disabled={isAddingPatient}>
+                                        {isAddingPatient ? "Pridávam..." : "Ulož Pacienta"}
+                                    </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -274,14 +383,16 @@ return (
                                     </TableRow>
                                 ) : filteredPatients.length > 0 ? (
                                     filteredPatients.map((p, idx) => (
-                                        <TableRow key={idx}>
+                                        <TableRow key={p.id || idx}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarImage src="/placeholder.svg" alt={p.name} />
                                                         <AvatarFallback>{p.name[0]}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{p.name} {p.surname}</div>
+                                                    <div>
+                                                        {p.name} {p.surname}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{p.email}</TableCell>
@@ -295,17 +406,25 @@ return (
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Uprav</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="text-red-600"
-                                                            onClick={() => deletePatient(p.id)} // You may need to add `id` to your Patient type
-                                                        >
-                                                            <Trash className="mr-2 h-4 w-4" />
-                                                            <span>Vymaž</span>
-                                                        </DropdownMenuItem>
+                                                        {[2, 3].includes(roleId ?? 0) ? (
+                                                            <DropdownMenuItem
+                                                                className="text-red-600"
+                                                                onClick={() => deletePatientHandler(p.id)}
+                                                                disabled={deletingPatientId === p.id}
+                                                            >
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                <span>{deletingPatientId === p.id ? "Mažem..." : "Vymaž"}</span>
+                                                            </DropdownMenuItem>
+                                                        ) : (
+                                                            <DropdownMenuItem
+                                                                className="text-red-600"
+                                                                onClick={() => deletePatientHandler(p.id)}
+                                                                disabled={deletingPatientId === p.id}
+                                                            >
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                <span>{deletingPatientId === p.id ? "Mažem..." : "Vymaž"}</span>
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

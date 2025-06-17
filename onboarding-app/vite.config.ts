@@ -1,20 +1,4 @@
-/*
-import path from "path"
-import tailwindcss from "@tailwindcss/vite"
 
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-})
-*/
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -33,6 +17,8 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://davidovito.duckdns.org:8080",
+        // target: "https://quiet-nails-wink.loca.lt",
+        //target: "oko-backend:8000",
         changeOrigin: true,
         secure: false,
       },

@@ -18,6 +18,5 @@ export const addAdmin = async (admin: Omit<Admin, "id">): Promise<void> => {
 }
 
 export const deleteAdmin = async (id: number): Promise<void> => {
-    await api.delete("/admin/deleteAdmin", { data: { id } })
+    await api.delete("/admin/deleteUser", { data: { id } })
 }
-

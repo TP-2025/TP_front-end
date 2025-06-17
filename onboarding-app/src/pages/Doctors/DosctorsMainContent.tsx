@@ -1,7 +1,9 @@
 "use client"
 
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { useState, useEffect } from "react"
-import { Plus, Search, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -14,13 +16,17 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/Security/authContext"
 import { useNavigate } from "react-router-dom"
-import { getDoctors, addDoctor as addDoctorRequest, deleteDoctor as deleteDoctorRequest, Doctor } from "@/api/doctorApi"
+import {
+    getDoctors,
+    addDoctor as addDoctorRequest,
+    deleteDoctor as deleteDoctorRequest,
+    type Doctor,
+} from "@/api/doctorApi"
 
 export default function DoctorsMainContent() {
     const [doctors, setDoctors] = useState<Doctor[]>([])
@@ -29,6 +35,16 @@ export default function DoctorsMainContent() {
     const [searchTerm, setSearchTerm] = useState("")
     const { roleId } = useAuth()
     const navigate = useNavigate()
+    const [isAddingDoctor, setIsAddingDoctor] = useState(false)
+    const [formMessage, setFormMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
+    const [deletingDoctorId, setDeletingDoctorId] = useState<number | null>(null)
+    const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error" | null; text: string }>({
+        type: null,
+        text: "",
+    })
 
     useEffect(() => {
         if (roleId !== 4) {
@@ -55,31 +71,55 @@ export default function DoctorsMainContent() {
     const filteredDoctors = (doctors || []).filter(
         (doctor) =>
             `${doctor.name} ${doctor.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.email.toLowerCase().includes(searchTerm.toLowerCase())
+            doctor.email.toLowerCase().includes(searchTerm.toLowerCase()),
     )
 
     const addDoctor = async (newDoctor: Omit<Doctor, "id">) => {
+        setIsAddingDoctor(true)
+        setFormMessage({ type: null, text: "" })
         try {
             console.log("➕ Adding doctor:", newDoctor)
             await addDoctorRequest(newDoctor)
             const updatedList = await getDoctors()
             console.log("✅ Doctors updated after add:", updatedList)
             setDoctors(updatedList)
-            setIsAddDoctorOpen(false)
+            setFormMessage({ type: "success", text: "Doktor bol úspešne pridaný!" })
+            // Close dialog after 1.5 seconds to show success message
+            setTimeout(() => {
+                setIsAddDoctorOpen(false)
+                setFormMessage({ type: null, text: "" })
+            }, 1500)
         } catch (error) {
             console.error("❌ Failed to add doctor:", error)
+            setFormMessage({ type: "error", text: "Nepodarilo sa pridať doktora. Skúste to znovu." })
+        } finally {
+            setIsAddingDoctor(false)
         }
     }
 
     const handleDelete = async (id: number) => {
+        setDeletingDoctorId(id)
+        setDeleteMessage({ type: null, text: "" })
         try {
             console.log("🗑️ Deleting doctor with ID:", id)
             await deleteDoctorRequest(id)
             const updatedList = await getDoctors()
             console.log("✅ Doctors updated after delete:", updatedList)
             setDoctors(updatedList)
+            setDeleteMessage({ type: "success", text: "Doktor bol úspešne vymazaný!" })
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 3000)
         } catch (error) {
             console.error("❌ Failed to delete doctor:", error)
+            setDeleteMessage({ type: "error", text: "Nepodarilo sa vymazať doktora. Skúste to znovu." })
+            // Clear error message after 5 seconds
+            setTimeout(() => {
+                setDeleteMessage({ type: null, text: "" })
+            }, 5000)
+        } finally {
+            setDeletingDoctorId(null)
         }
     }
 
@@ -102,7 +142,26 @@ export default function DoctorsMainContent() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Dialog open={isAddDoctorOpen} onOpenChange={setIsAddDoctorOpen}>
+                    {deleteMessage.type && (
+                        <div
+                            className={`p-3 rounded-md text-sm ${
+                                deleteMessage.type === "success"
+                                    ? "bg-green-50 text-green-800 border border-green-200"
+                                    : "bg-red-50 text-red-800 border border-red-200"
+                            }`}
+                        >
+                            {deleteMessage.text}
+                        </div>
+                    )}
+                    <Dialog
+                        open={isAddDoctorOpen}
+                        onOpenChange={(open) => {
+                            setIsAddDoctorOpen(open)
+                            if (open) {
+                                setFormMessage({ type: null, text: "" })
+                            }
+                        }}
+                    >
                         <DialogTrigger asChild>
                             <Button className="shrink-0">
                                 <Plus className="mr-2 h-4 w-4" />
@@ -114,6 +173,17 @@ export default function DoctorsMainContent() {
                                 <DialogTitle>Pridaj nového doktora</DialogTitle>
                                 <DialogDescription>Vyplň údaje</DialogDescription>
                             </DialogHeader>
+                            {formMessage.type && (
+                                <div
+                                    className={`p-3 rounded-md text-sm ${
+                                        formMessage.type === "success"
+                                            ? "bg-green-50 text-green-800 border border-green-200"
+                                            : "bg-red-50 text-red-800 border border-red-200"
+                                    }`}
+                                >
+                                    {formMessage.text}
+                                </div>
+                            )}
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault()
@@ -129,21 +199,43 @@ export default function DoctorsMainContent() {
                             >
                                 <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="name" className="text-right">Meno</Label>
-                                        <Input id="name" name="name" className="col-span-3" required />
+                                        <Label htmlFor="name" className="text-right">
+                                            Meno
+                                        </Label>
+                                        <Input id="name" name="name" className="col-span-3" required disabled={isAddingDoctor} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="surname" className="text-right">Priezvisko</Label>
-                                        <Input id="surname" name="surname" className="col-span-3" required />
+                                        <Label htmlFor="surname" className="text-right">
+                                            Priezvisko
+                                        </Label>
+                                        <Input id="surname" name="surname" className="col-span-3" required disabled={isAddingDoctor} />
                                     </div>
                                     <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="email" className="text-right">Email</Label>
-                                        <Input id="email" name="email" type="email" className="col-span-3" required />
+                                        <Label htmlFor="email" className="text-right">
+                                            Email
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            className="col-span-3"
+                                            required
+                                            disabled={isAddingDoctor}
+                                        />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsAddDoctorOpen(false)}>Zruš</Button>
-                                    <Button type="submit">Ulož Doktora</Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsAddDoctorOpen(false)}
+                                        disabled={isAddingDoctor}
+                                    >
+                                        Zruš
+                                    </Button>
+                                    <Button type="submit" disabled={isAddingDoctor}>
+                                        {isAddingDoctor ? "Pridávam..." : "Ulož Doktora"}
+                                    </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
@@ -178,11 +270,11 @@ export default function DoctorsMainContent() {
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarImage src={`/placeholder.svg`} alt={`${doctor.name} ${doctor.surname}`} />
-                                                        <AvatarFallback>
-                                                            {(doctor.name[0] + doctor.surname[0]).toUpperCase()}
-                                                        </AvatarFallback>
+                                                        <AvatarFallback>{(doctor.name[0] + doctor.surname[0]).toUpperCase()}</AvatarFallback>
                                                     </Avatar>
-                                                    <div>{doctor.name} {doctor.surname}</div>
+                                                    <div>
+                                                        {doctor.name} {doctor.surname}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>{doctor.email}</TableCell>
@@ -194,13 +286,13 @@ export default function DoctorsMainContent() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Uprav</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(doctor.id)}>
+                                                        <DropdownMenuItem
+                                                            className="text-red-600"
+                                                            onClick={() => handleDelete(doctor.id)}
+                                                            disabled={deletingDoctorId === doctor.id}
+                                                        >
                                                             <Trash className="mr-2 h-4 w-4" />
-                                                            <span>Vymaž</span>
+                                                            <span>{deletingDoctorId === doctor.id ? "Mažem..." : "Vymaž"}</span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>

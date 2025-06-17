@@ -9,6 +9,7 @@ import PatientsMainContent from "@/pages/Patients/PatientsMainContent"
 import DomovPage from "@/pages/otherSidebarStuff/Domov"
 import AddPhotoPage from "@/pages/AddPhotoPage/AddPhoto"
 import AnalyzePhotosMainContent from "@/pages/AnalyzePhotos/AnalyzePhotosMainContent"
+import Settings from "@/pages/otherSidebarStuff/Settings.tsx";
 
 import { RoleProtectedRoute } from "@/Security/RoleRoute"
 import { useAuth } from "@/Security/authContext"
@@ -78,6 +79,14 @@ function App() {
                     element={
                         <RoleProtectedRoute allowedRoleIds={[4, 3, 2]}>
                             <AnalyzePhotosMainContent />
+                        </RoleProtectedRoute>
+                    }
+                />
+                <Route
+                    path="Settings"
+                    element={
+                        <RoleProtectedRoute allowedRoleIds={[4, 3, 2]}>
+                            <Settings />
                         </RoleProtectedRoute>
                     }
                 />

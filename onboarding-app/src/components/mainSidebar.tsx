@@ -63,18 +63,20 @@ export function AppSidebar() {
                                     <SidebarMenuButton asChild>
                                         <Link to="/AddPhoto" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <Image />
-                                            <span className="text-lg font-medium text-gray-700">Fotky</span>
+                                            <span className="text-lg font-medium text-gray-700">Pridávanie fotiek</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+                                {(roleId === 4 || roleId === 3 ) &&(
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
                                         <Link to="/Analyze" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
                                             <ScanEye />
-                                            <span className="text-lg font-medium text-gray-700">Analýza</span>
+                                            <span className="text-lg font-medium text-gray-700">Analýza fotiek</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+                                )}
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
@@ -131,6 +133,7 @@ export function AppSidebar() {
                         <SidebarGroupLabel className="text-sm text-gray-600">Systém</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
+                                {(roleId === 4 || roleId === 3 || roleId === 2) && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
                                         <Link to="/settings" className="flex items-center gap-3 p-5 hover:bg-gray-100 rounded transition-colors">
@@ -139,6 +142,7 @@ export function AppSidebar() {
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+                                )}
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
