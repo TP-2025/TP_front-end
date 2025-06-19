@@ -16,9 +16,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://davidovito.duckdns.org:8080",
+        //target: "http://davidovito.duckdns.org:8080",
         // target: "https://quiet-nails-wink.loca.lt",
-        //target: "oko-backend:8000",
+        target: "oko-backend:8000",
         changeOrigin: true,
         secure: false,
       },
