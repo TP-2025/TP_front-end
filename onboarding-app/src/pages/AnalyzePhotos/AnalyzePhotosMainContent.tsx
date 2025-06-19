@@ -599,146 +599,130 @@ export default function PhotoGallery() {
 
             {/* Dialog content */}
             <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-                <DialogContent className="w-[95vw] max-w-none h-[90vh] overflow-y-auto overflow-x-hidden rounded-lg p-6">
-                    <DialogHeader>
-                        <DialogTitle>{selectedPhoto?.title}</DialogTitle>
+                <DialogContent
+                    className="w-[85vw] max-w-[1000px] h-[90vh] max-h-[900px] p-6 !w-[85vw] !max-w-[1000px]"
+                    style={{
+                        width: "85vw",
+                        maxWidth: "1000px",
+                        height: "90vh",
+                        maxHeight: "900px",
+                    }}
+                >
+                    <DialogHeader className="pb-4">
+                        <DialogTitle className="text-xl">{selectedPhoto?.title}</DialogTitle>
                     </DialogHeader>
 
                     {selectedPhoto && (
-                        <div className="grid lg:grid-cols-2 gap-6 mt-4">
-                            {/* Photo Section */}
-                            <div className="space-y-4">
-                                <div className="w-full">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(90vh-8rem)] w-full">
+                            {/* Photo Section - Full width on mobile, half on desktop */}
+                            <div className="space-y-4 flex flex-col">
+                                <div className="flex-1 min-h-0">
                                     <img
                                         src={selectedPhoto.src || "/placeholder.svg"}
                                         alt={selectedPhoto.title}
-                                        className="w-full h-[450px] lg:h-[550px] object-cover rounded-lg border"
+                                        className="w-full h-full object-contain rounded-lg border bg-white"
                                     />
                                 </div>
 
-                                {/* Photo Info */}
-                                <Card className="py-0">
-                                    <CardContent className="p-0">
-                                        <div className="p-4 space-y-3">
-                                            <h3 className="font-semibold">Informácie o fotografii</h3>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
-                                                    <span>Pacient: {selectedPhoto.patient}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                                    <span>Dátum: {selectedPhoto.capturedDate}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Camera className="h-4 w-4 text-muted-foreground" />
-                                                    <span>Fotoaparát: {selectedPhoto.camera}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium">Diagnóza:</span>
-                                                    <span>{selectedPhoto.diagnosis || "Neurčená"}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium">Zariadenie:</span>
-                                                    <span>{selectedPhoto.device || "Neurčené"}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium">Pridavné zariadenie:</span>
-                                                    <span>{selectedPhoto.additionalDevice || "Neurčené"}</span>
-                                                </div>
+                                {/* Photo Info - Compact */}
+                                <Card className="py-0 flex-shrink-0">
+                                    <CardContent className="p-4">
+                                        <h3 className="font-semibold mb-3">Informácie o fotografii</h3>
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <User className="h-4 w-4 text-muted-foreground" />
+                                                <span>Pacient: {selectedPhoto.patient}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                <span>Dátum: {selectedPhoto.capturedDate}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Camera className="h-4 w-4 text-muted-foreground" />
+                                                <span>Fotoaparát: {selectedPhoto.camera}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium">Diagnóza:</span>
+                                                <span>{selectedPhoto.diagnosis || "Neurčená"}</span>
                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
 
-                                {/* User Description Section */}
-                                <Card className="py-0">
-                                    <CardContent className="p-0">
-                                        <div className="px-4 py-4 space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-semibold">Vaše poznámky</h3>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setIsEditingDescription(!isEditingDescription)}
-                                                >
-                                                    <Edit3 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-
-                                            {isEditingDescription ? (
-                                                <div className="space-y-3">
-                                                    <Textarea
-                                                        placeholder="Pridajte vlastný popis alebo poznámky k tomuto obrázku..."
-                                                        value={userDescription}
-                                                        onChange={(e) => setUserDescription(e.target.value)}
-                                                        rows={4}
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        <Button size="sm" onClick={handleSaveDescription}>
-                                                            Uložiť
-                                                        </Button>
-                                                        <Button size="sm" variant="outline" onClick={() => setIsEditingDescription(false)}>
-                                                            Zrušiť
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="text-sm text-muted-foreground">
-                                                    {userDescription ? (
-                                                        <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                                                            {userDescription}
-                                                        </div>
-                                                    ) : (
-                                                        "Kliknite na tlačidlo úprav pre pridanie poznámok..."
-                                                    )}
-                                                </div>
-                                            )}
+                                {/* User Description Section - Compact */}
+                                <Card className="py-0 flex-shrink-0">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="font-semibold">Vaše poznámky</h3>
+                                            <Button variant="ghost" size="sm" onClick={() => setIsEditingDescription(!isEditingDescription)}>
+                                                <Edit3 className="h-4 w-4" />
+                                            </Button>
                                         </div>
+
+                                        {isEditingDescription ? (
+                                            <div className="space-y-3">
+                                                <Textarea
+                                                    placeholder="Pridajte vlastný popis alebo poznámky k tomuto obrázku..."
+                                                    value={userDescription}
+                                                    onChange={(e) => setUserDescription(e.target.value)}
+                                                    rows={3}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <Button size="sm" onClick={handleSaveDescription}>
+                                                        Uložiť
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" onClick={() => setIsEditingDescription(false)}>
+                                                        Zrušiť
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground">
+                                                {userDescription ? (
+                                                    <div className="whitespace-pre-wrap break-words">{userDescription}</div>
+                                                ) : (
+                                                    "Kliknite na tlačidlo úprav pre pridanie poznámok..."
+                                                )}
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
 
-                            {/* Analysis Section */}
-                            <div className="space-y-4">
+                            {/* Analysis Section - Full height scrollable */}
+                            <div className="space-y-4 overflow-y-auto h-full">
                                 {/* Analysis Type Selection */}
                                 <Card className="py-0">
-                                    <CardContent className="p-0">
-                                        <div className="px-4 py-4 space-y-2">
-                                            <h3 className="font-semibold">Nová analýza</h3>
-                                            <Select value={selectedAnalysisType} onValueChange={setSelectedAnalysisType}>
-                                                <SelectTrigger className="w-full text-center">
-                                                    <SelectValue placeholder="Vyberte typ analýzy" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {analysisTypes.map((type) => (
-                                                        <SelectItem key={type.value} value={type.value}>
-                                                            <div>
-                                                                <div className="font-medium">{type.label}</div>
-                                                                <div className="text-xs text-muted-foreground">{type.description}</div>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <Button onClick={handleAnalyze} className="w-full" disabled={isAnalyzing}>
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                {isAnalyzing ? "Analyzujem..." : "Spustiť novú analýzu"}
-                                            </Button>
-                                        </div>
+                                    <CardContent className="p-4">
+                                        <h3 className="font-semibold mb-3">Nová analýza</h3>
+                                        <Select value={selectedAnalysisType} onValueChange={setSelectedAnalysisType}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Vyberte typ analýzy" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {analysisTypes.map((type) => (
+                                                    <SelectItem key={type.value} value={type.value}>
+                                                        <div>
+                                                            <div className="font-medium">{type.label}</div>
+                                                            <div className="text-xs text-muted-foreground">{type.description}</div>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button onClick={handleAnalyze} className="w-full mt-3" disabled={isAnalyzing}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            {isAnalyzing ? "Analyzujem..." : "Spustiť novú analýzu"}
+                                        </Button>
                                     </CardContent>
                                 </Card>
 
                                 {isAnalyzing && (
                                     <Card className="py-0">
-                                        <CardContent className="p-0">
-                                            <div className="p-6 text-center">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                                                <p className="text-muted-foreground">Analyzujem obrázok...</p>
-                                                <p className="text-xs text-muted-foreground mt-2">
-                                                    {getAnalysisTypeLabel(selectedAnalysisType)}
-                                                </p>
-                                            </div>
+                                        <CardContent className="p-6 text-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                                            <p className="text-muted-foreground">Analyzujem obrázok...</p>
+                                            <p className="text-xs text-muted-foreground mt-2">{getAnalysisTypeLabel(selectedAnalysisType)}</p>
                                         </CardContent>
                                     </Card>
                                 )}
@@ -746,40 +730,38 @@ export default function PhotoGallery() {
                                 {/* List of Analyses */}
                                 {selectedPhoto.analyses.length > 0 && (
                                     <Card className="py-0">
-                                        <CardContent className="p-0">
-                                            <div className="px-4 py-4 space-y-3">
-                                                <h3 className="font-semibold">Zoznam analýz ({selectedPhoto.analyses.length})</h3>
-                                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                    {selectedPhoto.analyses.map((analysis, index) => (
-                                                        <div
-                                                            key={analysis.id}
-                                                            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                                                                selectedAnalysisId === analysis.id
-                                                                    ? "bg-primary/10 border-primary"
-                                                                    : "bg-muted/50 hover:bg-muted"
-                                                            }`}
-                                                            onClick={() => setSelectedAnalysisId(analysis.id)}
-                                                        >
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline" className="text-xs">
-                                                                        #{index + 1}
-                                                                    </Badge>
-                                                                    <span className="text-sm font-medium">{getAnalysisTypeLabel(analysis.type)}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    {analysis.doctorNotes && <FileText className="h-3 w-3 text-blue-500" />}
-                                                                    <span className="text-xs text-muted-foreground">
-                                    {new Date(analysis.createdAt).toLocaleDateString("sk-SK")}
-                                  </span>
-                                                                </div>
+                                        <CardContent className="p-4">
+                                            <h3 className="font-semibold mb-3">Zoznam analýz ({selectedPhoto.analyses.length})</h3>
+                                            <div className="space-y-2">
+                                                {selectedPhoto.analyses.map((analysis, index) => (
+                                                    <div
+                                                        key={analysis.id}
+                                                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                            selectedAnalysisId === analysis.id
+                                                                ? "bg-primary/10 border-primary"
+                                                                : "bg-muted/50 hover:bg-muted"
+                                                        }`}
+                                                        onClick={() => setSelectedAnalysisId(analysis.id)}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    #{index + 1}
+                                                                </Badge>
+                                                                <span className="text-sm font-medium">{getAnalysisTypeLabel(analysis.type)}</span>
                                                             </div>
-                                                            <div className="text-xs text-muted-foreground mt-1">
-                                                                {analysis.condition} • {analysis.confidence}% spoľahlivosť
+                                                            <div className="flex items-center gap-2">
+                                                                {analysis.doctorNotes && <FileText className="h-3 w-3 text-blue-500" />}
+                                                                <span className="text-xs text-muted-foreground">
+                                  {new Date(analysis.createdAt).toLocaleDateString("sk-SK")}
+                                </span>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                        <div className="text-xs text-muted-foreground mt-1">
+                                                            {analysis.condition} • {analysis.confidence}% spoľahlivosť
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -788,11 +770,11 @@ export default function PhotoGallery() {
                                 {/* Selected Analysis Details */}
                                 {selectedAnalysis && (
                                     <Card className="py-0">
-                                        <CardContent className="p-0">
-                                            <div className="px-4 py-4 space-y-3">
-                                                <div className="space-y-2">
-                                                    <h3 className="font-semibold">Výsledky analýzy</h3>
-                                                    <div className="text-sm text-muted-foreground">
+                                        <CardContent className="p-4">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h3 className="font-semibold mb-2">Výsledky analýzy</h3>
+                                                    <div className="text-sm text-muted-foreground mb-1">
                                                         {getAnalysisTypeLabel(selectedAnalysis.type)} •{" "}
                                                         {new Date(selectedAnalysis.createdAt).toLocaleString("sk-SK")}
                                                     </div>
@@ -855,60 +837,58 @@ export default function PhotoGallery() {
                                 {/* Doctor's Notes for Selected Analysis */}
                                 {selectedAnalysis && (
                                     <Card className="py-0">
-                                        <CardContent className="p-0">
-                                            <div className="px-4 py-4 space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <h3 className="font-semibold">Lekárske poznámky</h3>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setEditingDoctorNotes(selectedAnalysis.id)
-                                                            setDoctorNotesText(selectedAnalysis.doctorNotes || "")
-                                                        }}
-                                                    >
-                                                        <Edit3 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-
-                                                {editingDoctorNotes === selectedAnalysis.id ? (
-                                                    <div className="space-y-3">
-                                                        <Textarea
-                                                            placeholder="Pridajte lekárske poznámky k tejto analýze..."
-                                                            value={doctorNotesText}
-                                                            onChange={(e) => setDoctorNotesText(e.target.value)}
-                                                            rows={4}
-                                                        />
-                                                        <div className="flex gap-2">
-                                                            <Button size="sm" onClick={() => handleSaveDoctorNotes(selectedAnalysis.id)}>
-                                                                Uložiť
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => {
-                                                                    setEditingDoctorNotes(null)
-                                                                    setDoctorNotesText("")
-                                                                }}
-                                                            >
-                                                                Zrušiť
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-sm text-muted-foreground">
-                                                        {selectedAnalysis.doctorNotes ? (
-                                                            <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere bg-blue-50 p-3 rounded border-l-4 border-blue-200">
-                                                                {selectedAnalysis.doctorNotes}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-center py-4 text-muted-foreground">
-                                                                Žiadne lekárske poznámky. Kliknite na tlačidlo úprav pre pridanie poznámok.
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="font-semibold">Lekárske poznámky</h3>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setEditingDoctorNotes(selectedAnalysis.id)
+                                                        setDoctorNotesText(selectedAnalysis.doctorNotes || "")
+                                                    }}
+                                                >
+                                                    <Edit3 className="h-4 w-4" />
+                                                </Button>
                                             </div>
+
+                                            {editingDoctorNotes === selectedAnalysis.id ? (
+                                                <div className="space-y-3">
+                                                    <Textarea
+                                                        placeholder="Pridajte lekárske poznámky k tejto analýze..."
+                                                        value={doctorNotesText}
+                                                        onChange={(e) => setDoctorNotesText(e.target.value)}
+                                                        rows={4}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <Button size="sm" onClick={() => handleSaveDoctorNotes(selectedAnalysis.id)}>
+                                                            Uložiť
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setEditingDoctorNotes(null)
+                                                                setDoctorNotesText("")
+                                                            }}
+                                                        >
+                                                            Zrušiť
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm text-muted-foreground">
+                                                    {selectedAnalysis.doctorNotes ? (
+                                                        <div className="whitespace-pre-wrap break-words bg-blue-50 p-3 rounded border-l-4 border-blue-200">
+                                                            {selectedAnalysis.doctorNotes}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-4 text-muted-foreground">
+                                                            Žiadne lekárske poznámky. Kliknite na tlačidlo úprav pre pridanie poznámok.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 )}

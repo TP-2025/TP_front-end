@@ -1,4 +1,3 @@
-// i18n.ts (môžeš dať do src/utils alebo lib)
 export const i18n = {
     en: {
         login: "Login",
@@ -12,6 +11,9 @@ export const i18n = {
         chooseRole: "Choose role",
         loginSuccess: "✅ Form submitted successfully! Check the console.",
         selectRoleAlert: "❗ Please select a role before logging in.",
+        enterEmailForReset: "Enter your email address to receive a reset link.",
+        cancel: "Cancel",
+        sendResetLink: "Send reset link",
         helpTitle: "Help",
         Help: {
             role: "Role: Choose your role (Patient, Moderator).",
@@ -34,6 +36,9 @@ export const i18n = {
         chooseRole: "Vyber rolu",
         loginSuccess: "✅ Úspešne odoslané! Skontrolujte konzolu.",
         selectRoleAlert: "❗ Pred prihlásením vyberte rolu.",
+        enterEmailForReset: "Zadajte svoj e-mail pre zaslanie odkazu na obnovenie hesla.",
+        cancel: "Zrušiť",
+        sendResetLink: "Odoslať odkaz",
         helpTitle: "Pomoc",
         Help: {
             role: "Rola: Vyber svoju rolu (Pacient, Moderátor).",

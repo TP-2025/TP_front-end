@@ -2,8 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { toast } from "sonner"
-import { Upload, X, Check, User, Mail } from "lucide-react"
+import { Upload, X, Check, User, Mail } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -17,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/Security/authContext"
 import { uploadPhotoWithMetadata } from "@/api/addPhotoApi"
+import { getCameras, type CameraItem } from "@/api/settingsApi" // Adjust path if needed
+import { format } from "date-fns"
 
 interface PhotoInfo {
     id: string
@@ -50,6 +51,12 @@ export function PhotoUploader() {
     const [dateTaken, setDateTaken] = useState(() => new Date().toISOString().split("T")[0])
     const { roleId } = useAuth()
 
+    const [cameras, setCameras] = useState<CameraItem[]>([])
+
+    const [isUploading, setIsUploading] = useState(false)
+    const [uploadError, setUploadError] = useState<string | null>(null)
+
+
     useEffect(() => {
         const fetchPatients = async () => {
             try {
@@ -67,6 +74,32 @@ export function PhotoUploader() {
 
         fetchPatients()
     }, [roleId])
+
+    useEffect(() => {
+        const fetchPatientsAndCameras = async () => {
+            try {
+                const patientResponse =
+                    roleId === 4 || roleId === 2
+                        ? await import("@/api/patientApi").then((mod) => mod.getPatients())
+                        : await getMyPatients()
+                setPatients(patientResponse)
+            } catch (error) {
+                console.error("❌ Failed to load patients:", error)
+                setPatients([])
+            }
+
+            try {
+                const cameraResponse = await getCameras()
+                setCameras(cameraResponse)
+            } catch (error) {
+                console.error("❌ Failed to load cameras:", error)
+                setCameras([])
+            }
+        }
+
+        fetchPatientsAndCameras()
+    }, [roleId])
+
 
     const filteredPatients = patients.filter((patient) => {
         if (!inputValue) return true
@@ -103,9 +136,7 @@ export function PhotoUploader() {
 
     const handleFile = (file: File) => {
         if (!file.type.startsWith("image/")) {
-            toast.error("Invalid file type", {
-                description: "Please select an image file.",
-            })
+            setUploadError("Please select an image file.")
             return
         }
 
@@ -126,61 +157,49 @@ export function PhotoUploader() {
 
         setPhoto(newPhoto)
         setPhotoFile(file)
-
-        toast.success("Photo uploaded", {
-            description: "Your photo has been uploaded successfully.",
-        })
     }
 
     const savePhotoInfo = async () => {
-        ///////////////////////////if (!photo || !photoFile || !selectedPatient) {
         if (!photo || !photoFile || !selectedPatient) {
-            toast.error("Chýbajúce údaje", {
-                description: "Musíte nahrať fotku a vybrať pacienta.",
-            })
+            setUploadError("Musíte nahrať fotku a vybrať pacienta.")
             return
         }
 
         if (selectedQuality !== "dobrá" && selectedQuality !== "zlá") {
-            toast.error("Kvalita musí byť 'dobrá' alebo 'zlá'")
+            setUploadError("Kvalita musí byť 'dobrá' alebo 'zlá'")
             return
         }
+
+        setIsUploading(true)
+        setUploadError(null)
 
         try {
             await uploadPhotoWithMetadata(photoFile, {
                 patient_id: selectedPatient.id,
-                device_id: undefined, // Update when real device IDs available
-                additional_equipment_id: undefined,
+                device_id: selectedDevice && selectedDevice !== "none" ? Number(selectedDevice) : undefined,
+                additional_equipment_id: selectedAdditionalDevice && selectedAdditionalDevice !== "none" ? Number(selectedAdditionalDevice) : undefined,
                 quality: selectedQuality === "dobrá" ? "Dobra" : "Zla",
-                technic_notes: notes,
+                technic_notes: notes || undefined,
                 eye: selectedEye === "left" ? "l" : selectedEye === "right" ? "r" : undefined,
-                date: dateTaken,
+                date: format(new Date(dateTaken), "dd.MM.yyyy"),
                 technician_id: undefined,
             })
 
-            toast.success("Informácie uložené", {
-                description: "Fotka a metadáta boli úspešne odoslané.",
-            })
-
-            // Optional: reset form if upload succeeds
+            // Success - reset form
             resetForm()
-
+            setUploadError(null)
         } catch (error) {
             console.error("❌ Upload failed:", error)
-            toast.error("Chyba pri nahrávaní", {
-                description: "Skontrolujte spojenie alebo údaje.",
-            })
+            setUploadError("Chyba pri nahrávaní. Skontrolujte spojenie alebo údaje a skúste znova.")
+        } finally {
+            setIsUploading(false)
         }
     }
-
 
     const removePhoto = () => {
         if (photo?.url) URL.revokeObjectURL(photo.url)
         setPhoto(null)
         setPhotoFile(null)
-        toast.info("Foto odstránené", {
-            description: "Fotka bola odstránená.",
-        })
     }
 
     const resetForm = () => {
@@ -192,6 +211,7 @@ export function PhotoUploader() {
         setSelectedAdditionalDevice(null)
         setSelectedQuality(null)
         setDateTaken(() => new Date().toISOString().split("T")[0])
+        setUploadError(null)
         removePhoto()
     }
 
@@ -199,9 +219,8 @@ export function PhotoUploader() {
         if (selectedPatient) setInputValue(selectedPatient.name)
     }, [selectedPatient])
 
-
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-screen overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-h-screen md:overflow-hidden">
             {/* Left side - Photo upload and preview */}
             <div className="space-y-4">
                 {!photo ? (
@@ -257,7 +276,7 @@ export function PhotoUploader() {
             </div>
 
             {/* Right side - Photo information form */}
-            <Card className="pt-2 px-4 pb-4 max-h-screen overflow-y-auto">
+            <Card className="pt-2 px-4 pb-4 md:max-h-screen md:overflow-y-auto">
                 <h3 className="text-lg font-medium mb-2">Informácie o fotke</h3>
 
                 <div className="space-y-3">
@@ -351,21 +370,15 @@ export function PhotoUploader() {
                                         <SelectValue placeholder="Vyber hlavné zariadenie..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="fundus-camera-1">Fundus Camera - Model A</SelectItem>
-                                        <SelectItem value="fundus-camera-2">Fundus Camera - Model B</SelectItem>
-                                        <SelectItem value="oct-scanner-1">OCT Scanner - Cirrus HD</SelectItem>
-                                        <SelectItem value="oct-scanner-2">OCT Scanner - Spectralis</SelectItem>
-                                        <SelectItem value="slit-lamp-1">Slit Lamp - Haag Streit</SelectItem>
-                                        <SelectItem value="slit-lamp-2">Slit Lamp - Zeiss</SelectItem>
-                                        <SelectItem value="retinal-camera-1">Retinal Camera - Canon</SelectItem>
-                                        <SelectItem value="retinal-camera-2">Retinal Camera - Topcon</SelectItem>
-                                        <SelectItem value="corneal-topographer">Corneal Topographer</SelectItem>
-                                        <SelectItem value="visual-field-analyzer">Visual Field Analyzer</SelectItem>
-                                        <SelectItem value="pachymeter">Pachymeter</SelectItem>
-                                        <SelectItem value="tonometer">Tonometer</SelectItem>
-                                        <SelectItem value="biometer">Biometer</SelectItem>
-                                        <SelectItem value="endothelial-microscope">Endothelial Microscope</SelectItem>
-                                        <SelectItem value="other">Iné zariadenie</SelectItem>
+                                        {cameras.length === 0 ? (
+                                            <SelectItem value="none" disabled>Žiadne zariadenia</SelectItem>
+                                        ) : (
+                                            cameras.map((camera) => (
+                                                <SelectItem key={camera.id} value={String(camera.id)}>
+                                                    {camera.name} ({camera.type})
+                                                </SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -436,9 +449,19 @@ export function PhotoUploader() {
                         />
                     </div>
 
+                    {uploadError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                            <p className="text-sm text-red-600">{uploadError}</p>
+                        </div>
+                    )}
+
                     <div className="flex space-x-2">
-                        <Button onClick={savePhotoInfo} className="flex-1" disabled={!photo}>
-                            Ulož informácie
+                        <Button
+                            onClick={savePhotoInfo}
+                            className="flex-1"
+                            disabled={!photo || isUploading}
+                        >
+                            {isUploading ? "Ukladám..." : "Ulož informácie"}
                         </Button>
                         <Button variant="outline" onClick={resetForm}>
                             Reset

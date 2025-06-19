@@ -1,12 +1,14 @@
 import api from "./axios"
 
+
+
+///////////////////////////// Kamera
 export interface CameraItem {
     id: number
     name: string
     type: string
 }
 
-///////////////////////////// Kamera
 export const addCamera = async (name: string, type: string): Promise<void> => {
     await api.post("/user/addDevice", { name, type })
 }
@@ -41,11 +43,38 @@ export const deleteDiagnosis = async (id: number): Promise<void> => {
     await api.delete("/user/deleteDiagnosis", {params: { diagnose_id: id }
     })
 }
-/////////////////////////////
+////////////////////////////
+
+export interface UserPersonalInfo {
+    name: string
+    surname: string
+    date: string | null
+    sex: string | null
+}
+
+export interface PersonalDataPayload {
+    name: string
+    surname: string
+    sex?: string | null
+    birth_date?: string | null
+}
+
+export const getUserPersonalInfo = async (): Promise<UserPersonalInfo> => {
+    const res = await api.get("/user/getMyInfo")
+    console.log("📥 Received personal info:", res.data) // 👈 this prints it to the console
+    return res.data
+}
+
+export const sendPersonalData = async (data: PersonalDataPayload): Promise<void> => {
+    console.log("📤 Sending personal data:", data)
+    await api.post("/changePersonalInfo", data)
+}
 
 
-
-
+export const getAdditionalDevices = async (): Promise<CameraItem[]> => {
+    const response = await api.get("/")
+    return response.data.devices
+}
 
 
 

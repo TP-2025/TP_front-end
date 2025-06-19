@@ -2,23 +2,33 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Plus, Camera, Target, BarChart3, User, Lock, Eye, EyeOff, Calendar, Stethoscope, Trash2 } from "lucide-react"
+import { Plus, Camera, Target, BarChart3, User, Lock, Eye, EyeOff, Stethoscope, Trash2, Loader2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { format } from "date-fns"
 import { addCamera, addAccessory, addAnalysis, deleteCamera } from "@/api/settingsApi"
 import { addDiagnosis, getDiagnoses, deleteDiagnosis } from "@/api/settingsApi"
-import { toast } from "sonner"
 import { useAuth } from "@/Security/authContext"
 import { changePassword } from "@/api/settingsApi"
 import { getCameras } from "@/api/settingsApi"
 import { useEffect } from "react"
+
+import { getUserPersonalInfo } from "@/api/settingsApi"
+import { sendPersonalData } from "@/api/settingsApi"
+
+
 
 interface CameraItem {
     id: number
@@ -43,6 +53,13 @@ interface DiagnosisItem {
     name: string
 }
 
+interface NotificationState {
+    isOpen: boolean
+    type: "success" | "error"
+    title: string
+    message: string
+}
+
 export default function Settings() {
     const [activeTab, setActiveTab] = useState("personal")
     const { user } = useAuth()
@@ -58,34 +75,82 @@ export default function Settings() {
     const [analyses, setAnalyses] = useState<AnalysisItem[]>([])
     const [diagnoses, setDiagnoses] = useState<DiagnosisItem[]>([])
 
+    // Loading states
+    const [isLoadingCameras, setIsLoadingCameras] = useState(true)
+    const [isLoadingDiagnoses, setIsLoadingDiagnoses] = useState(true)
+    const [isAddingCamera, setIsAddingCamera] = useState(false)
+    const [isAddingAccessory, setIsAddingAccessory] = useState(false)
+    const [isAddingAnalysis, setIsAddingAnalysis] = useState(false)
+    const [isAddingDiagnosis, setIsAddingDiagnosis] = useState(false)
+    const [isUpdatingPersonal] = useState(false)
+    const [isChangingPassword, setIsChangingPassword] = useState(false)
+    const [deletingCameraId, setDeletingCameraId] = useState<number | null>(null)
+    const [deletingAccessoryId, setDeletingAccessoryId] = useState<number | null>(null)
+    const [deletingAnalysisId, setDeletingAnalysisId] = useState<number | null>(null)
+    const [deletingDiagnosisId, setDeletingDiagnosisId] = useState<number | null>(null)
+
+    // Add these new state variables after the existing loading states
+    const [camerasError, setCamerasError] = useState<string | null>(null)
+    const [diagnosesError, setDiagnosesError] = useState<string | null>(null)
+
+    const [isLoadingPersonalInfo, setIsLoadingPersonalInfo] = useState(true)
+
+    const [personalInfoError, setPersonalInfoError] = useState<string | null>(null)
 
 
+    const [notification, setNotification] = useState<NotificationState>({
+        isOpen: false,
+        type: "success",
+        title: "",
+        message: "",
+    })
+
+    const showNotification = (type: "success" | "error", title: string, message: string) => {
+        setNotification({
+            isOpen: true,
+            type,
+            title,
+            message,
+        })
+    }
+
+    const closeNotification = () => {
+        setNotification((prev) => ({ ...prev, isOpen: false }))
+    }
 
     useEffect(() => {
         fetchCameras()
-        fetchDiagnoses() // 👈 new
+        fetchDiagnoses()
+        fetchPersonalInfo()
     }, [])
 
     const fetchCameras = async () => {
         try {
+            setIsLoadingCameras(true)
+            setCamerasError(null)
             const data = await getCameras()
             setCameras(data)
         } catch (error) {
             console.error("Error fetching cameras:", error)
-            toast.error("Nepodarilo sa načítať kamery")
+            setCamerasError("Nepodarilo sa načítať kamery")
+        } finally {
+            setIsLoadingCameras(false)
         }
     }
 
     const fetchDiagnoses = async () => {
         try {
+            setIsLoadingDiagnoses(true)
+            setDiagnosesError(null)
             const data = await getDiagnoses()
             setDiagnoses(data)
         } catch (error) {
             console.error("Error fetching diagnoses:", error)
-            toast.error("Nepodarilo sa načítať diagnózy")
+            setDiagnosesError("Nepodarilo sa načítať diagnózy")
+        } finally {
+            setIsLoadingDiagnoses(false)
         }
     }
-
 
     // Personal info form state
     const [personalForm, setPersonalForm] = useState({
@@ -108,39 +173,65 @@ export default function Settings() {
         confirmPassword: false,
     })
 
-    const [datePickerOpen, setDatePickerOpen] = useState(false)
-
     const handleAddCamera = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (!cameraForm.name.trim() || !cameraForm.type.trim()) return
 
         try {
+            setIsAddingCamera(true)
             await addCamera(cameraForm.name, cameraForm.type)
             await fetchCameras()
-            toast.success("Zariadenie bolo úspešne pridané")
+            showNotification("success", "Úspech", "Zariadenie bolo úspešne pridané")
             setCameraForm({ name: "", type: "" })
         } catch (error) {
             console.error("Add device error:", error)
-            toast.error("Nepodarilo sa pridať zariadenie")
+            showNotification("error", "Chyba", "Nepodarilo sa pridať zariadenie")
+        } finally {
+            setIsAddingCamera(false)
+        }
+    }
+
+    const fetchPersonalInfo = async () => {
+        try {
+            setIsLoadingPersonalInfo(true)
+            setPersonalInfoError(null)
+            const data = await getUserPersonalInfo()
+
+            setPersonalForm({
+                name: data.name || "",
+                surname: data.surname || "",
+                birthDate: data.date ? new Date(data.date) : undefined,
+                gender: data.sex || "",
+            })
+        } catch (error) {
+            console.error("Error fetching personal info:", error)
+            setPersonalInfoError("Nepodarilo sa načítať osobné údaje")
+        } finally {
+            setIsLoadingPersonalInfo(false)
         }
     }
 
     const handleDeleteCamera = async (id: number) => {
         try {
+            setDeletingCameraId(id)
             await deleteCamera(id)
-            await fetchCameras() // refresh list from backend
-            toast.success("Kamera bola vymazaná")
+            await fetchCameras()
+            showNotification("success", "Úspech", "Kamera bola vymazaná")
         } catch (error) {
             console.error("Delete camera error:", error)
-            toast.error("Nepodarilo sa vymazať kameru")
+            showNotification("error", "Chyba", "Nepodarilo sa vymazať kameru")
+        } finally {
+            setDeletingCameraId(null)
         }
     }
 
     const handleAddAccessory = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!accessoryForm.name.trim()) return
+
         try {
+            setIsAddingAccessory(true)
             await addAccessory(accessoryForm.name)
             const newAccessory: AccessoryItem = {
                 id: Date.now(),
@@ -148,17 +239,21 @@ export default function Settings() {
                 description: accessoryForm.description,
             }
             setAccessories((prev) => [...prev, newAccessory])
-            toast.success("Zariadenie bolo úspešne pridané")
+            showNotification("success", "Úspech", "Zariadenie bolo úspešne pridané")
             setAccessoryForm({ name: "", description: "" })
         } catch (error) {
-            toast.error("Nepodarilo sa pridať zariadenie")
+            showNotification("error", "Chyba", "Nepodarilo sa pridať zariadenie")
+        } finally {
+            setIsAddingAccessory(false)
         }
     }
 
     const handleAddAnalysis = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!analysisForm.name.trim()) return
+
         try {
+            setIsAddingAnalysis(true)
             await addAnalysis(analysisForm.name)
             const newAnalysis: AnalysisItem = {
                 id: Date.now(),
@@ -166,96 +261,113 @@ export default function Settings() {
                 description: analysisForm.description,
             }
             setAnalyses((prev) => [...prev, newAnalysis])
-            toast.success("Analýza bola úspešne pridaná")
+            showNotification("success", "Úspech", "Analýza bola úspešne pridaná")
             setAnalysisForm({ name: "", description: "" })
         } catch (error) {
-            toast.error("Nepodarilo sa pridať analýzu")
+            showNotification("error", "Chyba", "Nepodarilo sa pridať analýzu")
+        } finally {
+            setIsAddingAnalysis(false)
         }
     }
 
     const handleAddDiagnosis = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!diagnosisForm.name.trim()) return
+
         try {
+            setIsAddingDiagnosis(true)
             await addDiagnosis(diagnosisForm.name)
             await fetchDiagnoses()
-            toast.success("Diagnóza bola úspešne pridaná")
+            showNotification("success", "Úspech", "Diagnóza bola úspešne pridaná")
             setDiagnosisForm({ name: "" })
         } catch (error) {
-            toast.error("Nepodarilo sa pridať diagnózu")
+            showNotification("error", "Chyba", "Nepodarilo sa pridať diagnózu")
+        } finally {
+            setIsAddingDiagnosis(false)
         }
     }
 
-
     const handleDeleteAccessory = (id: number) => {
-        setAccessories((prev) => prev.filter((accessory) => accessory.id !== id))
-        toast.success("Zariadenie bolo vymazané")
+        setDeletingAccessoryId(id)
+        setTimeout(() => {
+            setAccessories((prev) => prev.filter((accessory) => accessory.id !== id))
+            showNotification("success", "Úspech", "Zariadenie bolo vymazané")
+            setDeletingAccessoryId(null)
+        }, 500)
     }
 
     const handleDeleteAnalysis = (id: number) => {
-        setAnalyses((prev) => prev.filter((analysis) => analysis.id !== id))
-        toast.success("Analýza bola vymazaná")
+        setDeletingAnalysisId(id)
+        setTimeout(() => {
+            setAnalyses((prev) => prev.filter((analysis) => analysis.id !== id))
+            showNotification("success", "Úspech", "Analýza bola vymazaná")
+            setDeletingAnalysisId(null)
+        }, 500)
     }
 
     const handleDeleteDiagnosis = async (id: number) => {
         try {
+            setDeletingDiagnosisId(id)
             await deleteDiagnosis(id)
             await fetchDiagnoses()
-            toast.success("Diagnóza bola vymazaná")
+            showNotification("success", "Úspech", "Diagnóza bola vymazaná")
         } catch (error) {
-            toast.error("Nepodarilo sa vymazať diagnózu")
+            showNotification("error", "Chyba", "Nepodarilo sa vymazať diagnózu")
+        } finally {
+            setDeletingDiagnosisId(null)
         }
     }
 
-    const handlePersonalInfoUpdate = async (e: React.FormEvent) => {
-        e.preventDefault()
-        const form = e.currentTarget as HTMLFormElement
-        const formData = new FormData(form)
-
-        const personalData = {
-            name: formData.get("name") as string,
-            surname: formData.get("surname") as string,
-            birthDate: personalForm.birthDate?.toISOString().split("T")[0] || "",
-            gender: personalForm.gender,
-        }
+    const handleSendPersonalInfo = async (e: React.FormEvent) => {
+        e.preventDefault();
 
         try {
-            console.log("Personal data to update:", personalData)
-            // TODO: Add API call to update personal info
-            // await updatePersonalInfo(personalData)
-            toast.success("Osobné údaje boli úspešne aktualizované")
-        } catch (error) {
-            toast.error("Nepodarilo sa aktualizovať osobné údaje")
+            const payload = {
+                name: personalForm.name,
+                surname: personalForm.surname,
+                sex: personalForm.gender || null,
+                birth_date: personalForm.birthDate
+                    ? format(personalForm.birthDate, "dd.MM.yyyy")
+                    : null,
+            }
+
+            console.log("📤 Sending personal data:", payload)
+            await sendPersonalData(payload)
+            showNotification("success", "Úspech", "Údaje boli úspešne odoslané")
+        } catch (err) {
+            console.error("❌ Error sending personal data:", err)
+            showNotification("error", "Chyba", "Nepodarilo sa odoslať údaje")
         }
     }
+
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            toast.error("Nové heslá sa nezhodujú")
+            showNotification("error", "Chyba", "Nové heslá sa nezhodujú")
             return
         }
 
         if (passwordForm.newPassword.length < 6) {
-            toast.error("Nové heslo musí mať aspoň 6 znakov")
+            showNotification("error", "Chyba", "Nové heslo musí mať aspoň 6 znakov")
             return
         }
 
         try {
+            setIsChangingPassword(true)
             if (!user?.email) {
-                toast.error("Nie je možné získať email používateľa")
+                showNotification("error", "Chyba", "Nie je možné získať email používateľa")
                 return
             }
 
-            // Send password change request
             await changePassword({
                 email: user.email,
                 old_password: passwordForm.oldPassword,
                 new_password: passwordForm.newPassword,
             })
 
-            toast.success("Heslo bolo úspešne zmenené")
+            showNotification("success", "Úspech", "Heslo bolo úspešne zmenené")
             setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
         } catch (error: any) {
             console.error("Password change error:", error)
@@ -263,17 +375,18 @@ export default function Settings() {
             const backendCode = error?.response?.data?.code
 
             if (backendCode === "old_password_is_invalid") {
-                toast.error("Staré heslo je nesprávne")
+                showNotification("error", "Chyba", "Staré heslo je nesprávne")
             } else if (backendCode === "password_change_failed") {
-                toast.error("Nepodarilo sa zmeniť heslo. Skúste znova neskôr.")
+                showNotification("error", "Chyba", "Nepodarilo sa zmeniť heslo. Skúste znova neskôr.")
             } else if (error?.response?.status === 403) {
-                toast.error("Nemáte oprávnenie zmeniť heslo")
+                showNotification("error", "Chyba", "Nemáte oprávnenie zmeniť heslo")
             } else {
-                toast.error("Neznáma chyba pri zmene hesla")
+                showNotification("error", "Chyba", "Neznáma chyba pri zmene hesla")
             }
+        } finally {
+            setIsChangingPassword(false)
         }
     }
-
 
     const togglePasswordVisibility = (field: keyof typeof passwordVisibility) => {
         setPasswordVisibility((prev) => ({
@@ -360,102 +473,118 @@ export default function Settings() {
                 </div>
             </div>
 
+            {/* Notification Dialog */}
+            <Dialog open={notification.isOpen} onOpenChange={closeNotification}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className={notification.type === "success" ? "text-green-600" : "text-red-600"}>
+                            {notification.title}
+                        </DialogTitle>
+                        <DialogDescription>{notification.message}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button onClick={closeNotification}>OK</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {activeTab === "personal" && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <User className="w-5 h-5" />
-                            Osobné údaje
-                        </CardTitle>
-                        <CardDescription>Upravte svoje osobné informácie</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handlePersonalInfoUpdate} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Meno *</Label>
-                                    <Input
-                                        id="name"
-                                        name="name"
-                                        placeholder="Vaše meno"
-                                        value={personalForm.name}
-                                        onChange={(e) => setPersonalForm((prev) => ({ ...prev, name: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="surname">Priezvisko *</Label>
-                                    <Input
-                                        id="surname"
-                                        name="surname"
-                                        placeholder="Vaše priezvisko"
-                                        value={personalForm.surname}
-                                        onChange={(e) => setPersonalForm((prev) => ({ ...prev, surname: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Dátum narodenia</Label>
-                                    <div className="relative">
+                isLoadingPersonalInfo ? (
+                    <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        <span>Načítavam osobné údaje...</span>
+                    </div>
+                ) : personalInfoError ? (
+                    <Card>
+                        <CardContent className="text-center py-8">
+                            <p className="text-red-600 mb-4">{personalInfoError}</p>
+                            <Button variant="outline" onClick={fetchPersonalInfo}>
+                                Skúsiť znovu
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <User className="w-5 h-5" />
+                                Osobné údaje
+                            </CardTitle>
+                            <CardDescription>Upravte svoje osobné informácie</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSendPersonalInfo} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Meno *</Label>
                                         <Input
+                                            id="name"
+                                            name="name"
+                                            placeholder="Vaše meno"
+                                            value={personalForm.name}
+                                            onChange={(e) => setPersonalForm((prev) => ({ ...prev, name: e.target.value }))}
+                                            required
+                                            disabled={isUpdatingPersonal}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="surname">Priezvisko *</Label>
+                                        <Input
+                                            id="surname"
+                                            name="surname"
+                                            placeholder="Vaše priezvisko"
+                                            value={personalForm.surname}
+                                            onChange={(e) => setPersonalForm((prev) => ({ ...prev, surname: e.target.value }))}
+                                            required
+                                            disabled={isUpdatingPersonal}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="birthDate">Dátum narodenia</Label>
+                                        <Input
+                                            id="birthDate"
                                             type="date"
                                             value={personalForm.birthDate ? format(personalForm.birthDate, "yyyy-MM-dd") : ""}
                                             onChange={(e) => {
                                                 const date = e.target.value ? new Date(e.target.value) : undefined
                                                 setPersonalForm((prev) => ({ ...prev, birthDate: date }))
                                             }}
-                                            className="pr-10"
+                                            disabled={isUpdatingPersonal}
                                         />
-                                        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                                >
-                                                    <Calendar className="h-4 w-4" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={personalForm.birthDate}
-                                                    onSelect={(date) => {
-                                                        setPersonalForm((prev) => ({ ...prev, birthDate: date }))
-                                                        setDatePickerOpen(false)
-                                                    }}
-                                                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="gender">Pohlavie</Label>
+                                        <Select
+                                            value={personalForm.gender}
+                                            onValueChange={(value) => setPersonalForm((prev) => ({ ...prev, gender: value }))}
+                                            disabled={isUpdatingPersonal}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Vyberte pohlavie" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="muž">Muž</SelectItem>
+                                                <SelectItem value="žena">Žena</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="gender">Pohlavie</Label>
-                                    <Select
-                                        value={personalForm.gender}
-                                        onValueChange={(value) => setPersonalForm((prev) => ({ ...prev, gender: value }))}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Vyberte pohlavie" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="male">Muž</SelectItem>
-                                            <SelectItem value="female">Žena</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <Button type="submit" className="w-full">
-                                Uložiť zmeny
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                                <Button type="submit" className="w-full" disabled={isUpdatingPersonal}>
+                                    {isUpdatingPersonal ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Ukladám zmeny...
+                                        </>
+                                    ) : (
+                                        "Uložiť zmeny"
+                                    )}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )
             )}
 
             {activeTab === "password" && (
@@ -479,6 +608,7 @@ export default function Settings() {
                                         value={passwordForm.oldPassword}
                                         onChange={(e) => setPasswordForm((prev) => ({ ...prev, oldPassword: e.target.value }))}
                                         required
+                                        disabled={isChangingPassword}
                                     />
                                     <Button
                                         type="button"
@@ -486,6 +616,7 @@ export default function Settings() {
                                         size="sm"
                                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                         onClick={() => togglePasswordVisibility("oldPassword")}
+                                        disabled={isChangingPassword}
                                     >
                                         {passwordVisibility.oldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
@@ -502,6 +633,7 @@ export default function Settings() {
                                         onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
                                         required
                                         minLength={6}
+                                        disabled={isChangingPassword}
                                     />
                                     <Button
                                         type="button"
@@ -509,6 +641,7 @@ export default function Settings() {
                                         size="sm"
                                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                         onClick={() => togglePasswordVisibility("newPassword")}
+                                        disabled={isChangingPassword}
                                     >
                                         {passwordVisibility.newPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
@@ -525,6 +658,7 @@ export default function Settings() {
                                         onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                                         required
                                         minLength={6}
+                                        disabled={isChangingPassword}
                                     />
                                     <Button
                                         type="button"
@@ -532,6 +666,7 @@ export default function Settings() {
                                         size="sm"
                                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                         onClick={() => togglePasswordVisibility("confirmPassword")}
+                                        disabled={isChangingPassword}
                                     >
                                         {passwordVisibility.confirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
@@ -546,13 +681,21 @@ export default function Settings() {
                                 type="submit"
                                 className="w-full"
                                 disabled={
+                                    isChangingPassword ||
                                     passwordForm.newPassword !== passwordForm.confirmPassword ||
                                     !passwordForm.oldPassword ||
                                     !passwordForm.newPassword ||
                                     !passwordForm.confirmPassword
                                 }
                             >
-                                Zmeniť heslo
+                                {isChangingPassword ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Mením heslo...
+                                    </>
+                                ) : (
+                                    "Zmeniť heslo"
+                                )}
                             </Button>
                         </form>
                     </CardContent>
@@ -580,6 +723,7 @@ export default function Settings() {
                                             value={cameraForm.name}
                                             onChange={(e) => setCameraForm((prev) => ({ ...prev, name: e.target.value }))}
                                             required
+                                            disabled={isAddingCamera}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -590,12 +734,22 @@ export default function Settings() {
                                             value={cameraForm.type}
                                             onChange={(e) => setCameraForm((prev) => ({ ...prev, type: e.target.value }))}
                                             required
+                                            disabled={isAddingCamera}
                                         />
                                     </div>
                                 </div>
-                                <Button type="submit" className="w-full">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Pridať kameru
+                                <Button type="submit" className="w-full" disabled={isAddingCamera}>
+                                    {isAddingCamera ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Pridávam kameru...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Pridať kameru
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>
@@ -607,7 +761,19 @@ export default function Settings() {
                             <CardDescription>Prehľad všetkých pridaných kamier</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {cameras.length === 0 ? (
+                            {isLoadingCameras ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    <span>Načítavam kamery...</span>
+                                </div>
+                            ) : camerasError ? (
+                                <div className="text-center py-8">
+                                    <p className="text-red-600 mb-2">{camerasError}</p>
+                                    <Button variant="outline" size="sm" onClick={fetchCameras}>
+                                        Skúsiť znovu
+                                    </Button>
+                                </div>
+                            ) : cameras.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-4">Žiadne kamery neboli pridané</p>
                             ) : (
                                 <div className="space-y-2">
@@ -625,8 +791,13 @@ export default function Settings() {
                                                 size="sm"
                                                 onClick={() => handleDeleteCamera(camera.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                disabled={deletingCameraId === camera.id}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                {deletingCameraId === camera.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
                                             </Button>
                                         </div>
                                     ))}
@@ -657,6 +828,7 @@ export default function Settings() {
                                         value={accessoryForm.name}
                                         onChange={(e) => setAccessoryForm((prev) => ({ ...prev, name: e.target.value }))}
                                         required
+                                        disabled={isAddingAccessory}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -667,11 +839,21 @@ export default function Settings() {
                                         value={accessoryForm.description}
                                         onChange={(e) => setAccessoryForm((prev) => ({ ...prev, description: e.target.value }))}
                                         rows={3}
+                                        disabled={isAddingAccessory}
                                     />
                                 </div>
-                                <Button type="submit" className="w-full">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Pridať zariadenie
+                                <Button type="submit" className="w-full" disabled={isAddingAccessory}>
+                                    {isAddingAccessory ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Pridávam zariadenie...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Pridať zariadenie
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>
@@ -703,8 +885,13 @@ export default function Settings() {
                                                 size="sm"
                                                 onClick={() => handleDeleteAccessory(accessory.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                disabled={deletingAccessoryId === accessory.id}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                {deletingAccessoryId === accessory.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
                                             </Button>
                                         </div>
                                     ))}
@@ -735,6 +922,7 @@ export default function Settings() {
                                         value={analysisForm.name}
                                         onChange={(e) => setAnalysisForm((prev) => ({ ...prev, name: e.target.value }))}
                                         required
+                                        disabled={isAddingAnalysis}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -745,11 +933,21 @@ export default function Settings() {
                                         value={analysisForm.description}
                                         onChange={(e) => setAnalysisForm((prev) => ({ ...prev, description: e.target.value }))}
                                         rows={3}
+                                        disabled={isAddingAnalysis}
                                     />
                                 </div>
-                                <Button type="submit" className="w-full">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Pridať analýzu
+                                <Button type="submit" className="w-full" disabled={isAddingAnalysis}>
+                                    {isAddingAnalysis ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Pridávam analýzu...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Pridať analýzu
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>
@@ -781,8 +979,13 @@ export default function Settings() {
                                                 size="sm"
                                                 onClick={() => handleDeleteAnalysis(analysis.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                disabled={deletingAnalysisId === analysis.id}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                {deletingAnalysisId === analysis.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
                                             </Button>
                                         </div>
                                     ))}
@@ -813,11 +1016,21 @@ export default function Settings() {
                                         value={diagnosisForm.name}
                                         onChange={(e) => setDiagnosisForm((prev) => ({ ...prev, name: e.target.value }))}
                                         required
+                                        disabled={isAddingDiagnosis}
                                     />
                                 </div>
-                                <Button type="submit" className="w-full">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Pridať diagnózu
+                                <Button type="submit" className="w-full" disabled={isAddingDiagnosis}>
+                                    {isAddingDiagnosis ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Pridávam diagnózu...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Pridať diagnózu
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>
@@ -829,7 +1042,19 @@ export default function Settings() {
                             <CardDescription>Prehľad všetkých pridaných diagnóz</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {diagnoses.length === 0 ? (
+                            {isLoadingDiagnoses ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    <span>Načítavam diagnózy...</span>
+                                </div>
+                            ) : diagnosesError ? (
+                                <div className="text-center py-8">
+                                    <p className="text-red-600 mb-2">{diagnosesError}</p>
+                                    <Button variant="outline" size="sm" onClick={fetchDiagnoses}>
+                                        Skúsiť znovu
+                                    </Button>
+                                </div>
+                            ) : diagnoses.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-4">Žiadne diagnózy neboli pridané</p>
                             ) : (
                                 <div className="space-y-2">
@@ -846,8 +1071,13 @@ export default function Settings() {
                                                 size="sm"
                                                 onClick={() => handleDeleteDiagnosis(diagnosis.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                disabled={deletingDiagnosisId === diagnosis.id}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                {deletingDiagnosisId === diagnosis.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
                                             </Button>
                                         </div>
                                     ))}
