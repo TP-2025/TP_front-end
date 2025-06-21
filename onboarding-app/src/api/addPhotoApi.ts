@@ -27,6 +27,6 @@ export const uploadPhotoWithMetadata = async (
         console.log(key, ":", value)
     }
 
-    return api.post("/user/addPicture", formData, {
+    return api.post("/image/addPicture", formData, {
     })
 }

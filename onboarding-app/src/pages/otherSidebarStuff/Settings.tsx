@@ -2,12 +2,11 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Plus, Camera, Target, BarChart3, User, Lock, Eye, EyeOff, Stethoscope, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Camera, Target, BarChart3, User, Lock, Eye, EyeOff, Stethoscope, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
     Dialog,
@@ -18,8 +17,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { format } from "date-fns"
-import { addCamera, addAccessory, addAnalysis, deleteCamera } from "@/api/settingsApi"
+import { addCamera, deleteCamera } from "@/api/settingsApi"
 import { addDiagnosis, getDiagnoses, deleteDiagnosis } from "@/api/settingsApi"
+import { addAdditionalDevice, getAdditionalDevices, deleteAdditionalDevice } from "@/api/settingsApi"
+
 import { useAuth } from "@/Security/authContext"
 import { changePassword } from "@/api/settingsApi"
 import { getCameras } from "@/api/settingsApi"
@@ -28,24 +29,16 @@ import { useEffect } from "react"
 import { getUserPersonalInfo } from "@/api/settingsApi"
 import { sendPersonalData } from "@/api/settingsApi"
 
+import { getAnalyses, addAnalysis, deleteAnalysis } from "@/api/settingsApi"
+
+
+
 
 
 interface CameraItem {
     id: number
     name: string
     type: string
-}
-
-interface AccessoryItem {
-    id: number
-    name: string
-    description: string
-}
-
-interface AnalysisItem {
-    id: number
-    name: string
-    description: string
 }
 
 interface DiagnosisItem {
@@ -65,37 +58,38 @@ export default function Settings() {
     const { user } = useAuth()
 
     const [cameraForm, setCameraForm] = useState({ name: "", type: "" })
-    const [accessoryForm, setAccessoryForm] = useState({ name: "", description: "" })
-    const [analysisForm, setAnalysisForm] = useState({ name: "", description: "" })
     const [diagnosisForm, setDiagnosisForm] = useState({ name: "" })
 
-    // Lists of added items
     const [cameras, setCameras] = useState<CameraItem[]>([])
-    const [accessories, setAccessories] = useState<AccessoryItem[]>([])
-    const [analyses, setAnalyses] = useState<AnalysisItem[]>([])
     const [diagnoses, setDiagnoses] = useState<DiagnosisItem[]>([])
 
-    // Loading states
     const [isLoadingCameras, setIsLoadingCameras] = useState(true)
     const [isLoadingDiagnoses, setIsLoadingDiagnoses] = useState(true)
     const [isAddingCamera, setIsAddingCamera] = useState(false)
-    const [isAddingAccessory, setIsAddingAccessory] = useState(false)
-    const [isAddingAnalysis, setIsAddingAnalysis] = useState(false)
     const [isAddingDiagnosis, setIsAddingDiagnosis] = useState(false)
     const [isUpdatingPersonal] = useState(false)
     const [isChangingPassword, setIsChangingPassword] = useState(false)
     const [deletingCameraId, setDeletingCameraId] = useState<number | null>(null)
-    const [deletingAccessoryId, setDeletingAccessoryId] = useState<number | null>(null)
-    const [deletingAnalysisId, setDeletingAnalysisId] = useState<number | null>(null)
     const [deletingDiagnosisId, setDeletingDiagnosisId] = useState<number | null>(null)
 
-    // Add these new state variables after the existing loading states
     const [camerasError, setCamerasError] = useState<string | null>(null)
     const [diagnosesError, setDiagnosesError] = useState<string | null>(null)
-
     const [isLoadingPersonalInfo, setIsLoadingPersonalInfo] = useState(true)
-
     const [personalInfoError, setPersonalInfoError] = useState<string | null>(null)
+
+    const [additionalDevices, setAdditionalDevices] = useState<CameraItem[]>([])
+    const [additionalDeviceForm, setAdditionalDeviceForm] = useState({ name: "" })
+    const [analyses, setAnalyses] = useState<{ id: number; name: string }[]>([])
+
+    const [analysisForm, setAnalysisForm] = useState({ name: "" })
+    const [isAddingAdditionalDevice, setIsAddingAdditionalDevice] = useState(false)
+    const [isLoadingAdditionalDevices, setIsLoadingAdditionalDevices] = useState(true)
+    const [deletingAdditionalDeviceId, setDeletingAdditionalDeviceId] = useState<number | null>(null)
+
+    const [isLoadingAnalyses, setIsLoadingAnalyses] = useState(true)
+    const [analysesError, setAnalysesError] = useState<string | null>(null)
+    const [isAddingAnalysis, setIsAddingAnalysis] = useState(false)
+    const [deletingAnalysisId, setDeletingAnalysisId] = useState<number | null>(null)
 
 
     const [notification, setNotification] = useState<NotificationState>({
@@ -122,6 +116,8 @@ export default function Settings() {
         fetchCameras()
         fetchDiagnoses()
         fetchPersonalInfo()
+        fetchAdditionalDevices()
+        fetchAnalyses()
     }, [])
 
     const fetchCameras = async () => {
@@ -152,7 +148,64 @@ export default function Settings() {
         }
     }
 
-    // Personal info form state
+    const fetchAdditionalDevices = async () => {
+        try {
+            setIsLoadingAdditionalDevices(true)
+            const data = await getAdditionalDevices()
+            setAdditionalDevices(data)
+        } catch (error) {
+            showNotification("error", "Chyba", "Nepodarilo sa načítať prídavné zariadenia")
+        } finally {
+            setIsLoadingAdditionalDevices(false)
+        }
+    }
+
+    const fetchAnalyses = async () => {
+        try {
+            setIsLoadingAnalyses(true)
+            setAnalysesError(null)
+            const data = await getAnalyses()
+            setAnalyses(data)
+        } catch (error) {
+            console.error("Error fetching analyses:", error)
+            setAnalysesError("Nepodarilo sa načítať analýzy")
+        } finally {
+            setIsLoadingAnalyses(false)
+        }
+    }
+
+    const handleAddAnalysis = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!analysisForm.name.trim()) return
+
+        try {
+            setIsAddingAnalysis(true)
+            await addAnalysis(analysisForm.name)
+            await fetchAnalyses()
+            setAnalysisForm({ name: "" })
+            showNotification("success", "Úspech", "Analýza bola pridaná")
+        } catch (error) {
+            console.error("Add analysis error:", error)
+            showNotification("error", "Chyba", "Nepodarilo sa pridať analýzu")
+        } finally {
+            setIsAddingAnalysis(false)
+        }
+    }
+
+    const handleDeleteAnalysis = async (id: number) => {
+        try {
+            setDeletingAnalysisId(id)
+            await deleteAnalysis(id)
+            await fetchAnalyses()
+            showNotification("success", "Úspech", "Analýza bola vymazaná")
+        } catch (error) {
+            console.error("Delete analysis error:", error)
+            showNotification("error", "Chyba", "Nepodarilo sa vymazať analýzu")
+        } finally {
+            setDeletingAnalysisId(null)
+        }
+    }
+
     const [personalForm, setPersonalForm] = useState({
         name: "",
         surname: "",
@@ -160,7 +213,6 @@ export default function Settings() {
         gender: "",
     })
 
-    // Password form state with visibility toggles
     const [passwordForm, setPasswordForm] = useState({
         oldPassword: "",
         newPassword: "",
@@ -226,50 +278,36 @@ export default function Settings() {
         }
     }
 
-    const handleAddAccessory = async (e: React.FormEvent) => {
+    const handleAddAdditionalDevice = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!accessoryForm.name.trim()) return
+        if (!additionalDeviceForm.name.trim()) return
 
         try {
-            setIsAddingAccessory(true)
-            await addAccessory(accessoryForm.name)
-            const newAccessory: AccessoryItem = {
-                id: Date.now(),
-                name: accessoryForm.name,
-                description: accessoryForm.description,
-            }
-            setAccessories((prev) => [...prev, newAccessory])
-            showNotification("success", "Úspech", "Zariadenie bolo úspešne pridané")
-            setAccessoryForm({ name: "", description: "" })
+            setIsAddingAdditionalDevice(true)
+            await addAdditionalDevice(additionalDeviceForm.name)
+            await fetchAdditionalDevices()
+            setAdditionalDeviceForm({ name: "" })
+            showNotification("success", "Úspech", "Prídavné zariadenie bolo pridané")
         } catch (error) {
-            showNotification("error", "Chyba", "Nepodarilo sa pridať zariadenie")
+            showNotification("error", "Chyba", "Nepodarilo sa pridať prídavné zariadenie")
         } finally {
-            setIsAddingAccessory(false)
+            setIsAddingAdditionalDevice(false)
         }
     }
 
-    const handleAddAnalysis = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!analysisForm.name.trim()) return
-
+    const handleDeleteAdditionalDevice = async (id: number) => {
         try {
-            setIsAddingAnalysis(true)
-            await addAnalysis(analysisForm.name)
-            const newAnalysis: AnalysisItem = {
-                id: Date.now(),
-                name: analysisForm.name,
-                description: analysisForm.description,
-            }
-            setAnalyses((prev) => [...prev, newAnalysis])
-            showNotification("success", "Úspech", "Analýza bola úspešne pridaná")
-            setAnalysisForm({ name: "", description: "" })
+            setDeletingAdditionalDeviceId(id)
+            await deleteAdditionalDevice(id)
+            await fetchAdditionalDevices()
+            showNotification("success", "Úspech", "Zariadenie bolo vymazané")
         } catch (error) {
-            showNotification("error", "Chyba", "Nepodarilo sa pridať analýzu")
+            showNotification("error", "Chyba", "Nepodarilo sa vymazať zariadenie")
         } finally {
-            setIsAddingAnalysis(false)
+            setDeletingAdditionalDeviceId(null)
         }
     }
-
+    
     const handleAddDiagnosis = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!diagnosisForm.name.trim()) return
@@ -287,24 +325,6 @@ export default function Settings() {
         }
     }
 
-    const handleDeleteAccessory = (id: number) => {
-        setDeletingAccessoryId(id)
-        setTimeout(() => {
-            setAccessories((prev) => prev.filter((accessory) => accessory.id !== id))
-            showNotification("success", "Úspech", "Zariadenie bolo vymazané")
-            setDeletingAccessoryId(null)
-        }, 500)
-    }
-
-    const handleDeleteAnalysis = (id: number) => {
-        setDeletingAnalysisId(id)
-        setTimeout(() => {
-            setAnalyses((prev) => prev.filter((analysis) => analysis.id !== id))
-            showNotification("success", "Úspech", "Analýza bola vymazaná")
-            setDeletingAnalysisId(null)
-        }, 500)
-    }
-
     const handleDeleteDiagnosis = async (id: number) => {
         try {
             setDeletingDiagnosisId(id)
@@ -319,16 +339,14 @@ export default function Settings() {
     }
 
     const handleSendPersonalInfo = async (e: React.FormEvent) => {
-        e.preventDefault();
+        e.preventDefault()
 
         try {
             const payload = {
                 name: personalForm.name,
                 surname: personalForm.surname,
                 sex: personalForm.gender || null,
-                birth_date: personalForm.birthDate
-                    ? format(personalForm.birthDate, "dd.MM.yyyy")
-                    : null,
+                birth_date: personalForm.birthDate ? format(personalForm.birthDate, "dd.MM.yyyy") : null,
             }
 
             console.log("📤 Sending personal data:", payload)
@@ -339,7 +357,6 @@ export default function Settings() {
             showNotification("error", "Chyba", "Nepodarilo sa odoslať údaje")
         }
     }
-
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -438,9 +455,9 @@ export default function Settings() {
                         Kamery
                     </button>
                     <button
-                        onClick={() => setActiveTab("accessories")}
+                        onClick={() => setActiveTab("additional")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            activeTab === "accessories"
+                            activeTab === "additional"
                                 ? "bg-background text-foreground shadow-sm"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -488,8 +505,8 @@ export default function Settings() {
                 </DialogContent>
             </Dialog>
 
-            {activeTab === "personal" && (
-                isLoadingPersonalInfo ? (
+            {activeTab === "personal" &&
+                (isLoadingPersonalInfo ? (
                     <div className="flex items-center justify-center py-6">
                         <Loader2 className="w-5 h-5 animate-spin mr-2" />
                         <span>Načítavam osobné údaje...</span>
@@ -584,8 +601,7 @@ export default function Settings() {
                             </form>
                         </CardContent>
                     </Card>
-                )
-            )}
+                ))}
 
             {activeTab === "password" && (
                 <Card>
@@ -808,42 +824,31 @@ export default function Settings() {
                 </div>
             )}
 
-            {activeTab === "accessories" && (
+            {activeTab === "additional" && (
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Target className="w-5 h-5" />
-                                Pridať nové prídavné zariadenie
+                                Pridať nové samostatné zariadenie
                             </CardTitle>
-                            <CardDescription>Pridajte nové prídavné zariadenie pre vaše kamery</CardDescription>
+                            <CardDescription>Pridajte nové zariadenie, ktoré nie je naviazané na kameru</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleAddAccessory} className="space-y-4">
+                            <form onSubmit={handleAddAdditionalDevice} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="accessory-name">Názov zariadenia *</Label>
+                                    <Label htmlFor="additional-name">Názov zariadenia *</Label>
                                     <Input
-                                        id="accessory-name"
-                                        placeholder="napr. Infračervený modul"
-                                        value={accessoryForm.name}
-                                        onChange={(e) => setAccessoryForm((prev) => ({ ...prev, name: e.target.value }))}
+                                        id="additional-name"
+                                        placeholder="napr. Prídavný monitor"
+                                        value={additionalDeviceForm.name}
+                                        onChange={(e) => setAdditionalDeviceForm({ name: e.target.value })}
                                         required
-                                        disabled={isAddingAccessory}
+                                        disabled={isAddingAdditionalDevice}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="accessory-description">Popis</Label>
-                                    <Textarea
-                                        id="accessory-description"
-                                        placeholder="Voliteľný popis zariadenia..."
-                                        value={accessoryForm.description}
-                                        onChange={(e) => setAccessoryForm((prev) => ({ ...prev, description: e.target.value }))}
-                                        rows={3}
-                                        disabled={isAddingAccessory}
-                                    />
-                                </div>
-                                <Button type="submit" className="w-full" disabled={isAddingAccessory}>
-                                    {isAddingAccessory ? (
+                                <Button type="submit" className="w-full" disabled={isAddingAdditionalDevice}>
+                                    {isAddingAdditionalDevice ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                             Pridávam zariadenie...
@@ -861,33 +866,35 @@ export default function Settings() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Zoznam prídavných zariadení</CardTitle>
-                            <CardDescription>Prehľad všetkých pridaných zariadení</CardDescription>
+                            <CardTitle>Zoznam samostatných zariadení</CardTitle>
+                            <CardDescription>Zariadenia nepripojené ku kamerám</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {accessories.length === 0 ? (
-                                <p className="text-muted-foreground text-center py-4">Žiadne zariadenia neboli pridané</p>
+                            {isLoadingAdditionalDevices ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    <span>Načítavam zariadenia...</span>
+                                </div>
+                            ) : additionalDevices.length === 0 ? (
+                                <p className="text-muted-foreground text-center py-4">Žiadne samostatné zariadenia neboli pridané</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {accessories.map((accessory) => (
+                                    {additionalDevices.map((device) => (
                                         <div
-                                            key={accessory.id}
+                                            key={device.id}
                                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
                                         >
-                                            <div className="flex-1">
-                                                <p className="font-medium">{accessory.name}</p>
-                                                {accessory.description && (
-                                                    <p className="text-sm text-muted-foreground">{accessory.description}</p>
-                                                )}
+                                            <div>
+                                                <p className="font-medium">{device.name}</p>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleDeleteAccessory(accessory.id)}
+                                                onClick={() => handleDeleteAdditionalDevice(device.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                disabled={deletingAccessoryId === accessory.id}
+                                                disabled={deletingAdditionalDeviceId === device.id}
                                             >
-                                                {deletingAccessoryId === accessory.id ? (
+                                                {deletingAdditionalDeviceId === device.id ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     <Trash2 className="h-4 w-4" />
@@ -922,18 +929,6 @@ export default function Settings() {
                                         value={analysisForm.name}
                                         onChange={(e) => setAnalysisForm((prev) => ({ ...prev, name: e.target.value }))}
                                         required
-                                        disabled={isAddingAnalysis}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="analysis-description">Popis</Label>
-                                    <Textarea
-                                        id="analysis-description"
-                                        placeholder="Popíšte, čo táto analýza robí..."
-                                        value={analysisForm.description}
-                                        onChange={(e) => setAnalysisForm((prev) => ({ ...prev, description: e.target.value }))}
-                                        rows={3}
-                                        disabled={isAddingAnalysis}
                                     />
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isAddingAnalysis}>
@@ -949,6 +944,7 @@ export default function Settings() {
                                         </>
                                     )}
                                 </Button>
+
                             </form>
                         </CardContent>
                     </Card>
@@ -959,7 +955,19 @@ export default function Settings() {
                             <CardDescription>Prehľad všetkých pridaných analýz</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {analyses.length === 0 ? (
+                            {isLoadingAnalyses ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    <span>Načítavam analýzy...</span>
+                                </div>
+                            ) : analysesError ? (
+                                <div className="text-center py-8">
+                                    <p className="text-red-600 mb-2">{analysesError}</p>
+                                    <Button variant="outline" size="sm" onClick={fetchAnalyses}>
+                                        Skúsiť znovu
+                                    </Button>
+                                </div>
+                            ) : analyses.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-4">Žiadne analýzy neboli pridané</p>
                             ) : (
                                 <div className="space-y-2">
@@ -968,11 +976,8 @@ export default function Settings() {
                                             key={analysis.id}
                                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
                                         >
-                                            <div className="flex-1">
+                                            <div>
                                                 <p className="font-medium">{analysis.name}</p>
-                                                {analysis.description && (
-                                                    <p className="text-sm text-muted-foreground">{analysis.description}</p>
-                                                )}
                                             </div>
                                             <Button
                                                 variant="ghost"
@@ -980,13 +985,14 @@ export default function Settings() {
                                                 onClick={() => handleDeleteAnalysis(analysis.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                 disabled={deletingAnalysisId === analysis.id}
-                                            >
+                                                >
                                                 {deletingAnalysisId === analysis.id ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     <Trash2 className="h-4 w-4" />
                                                 )}
-                                            </Button>
+                                        </Button>
+
                                         </div>
                                     ))}
                                 </div>

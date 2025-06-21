@@ -19,7 +19,7 @@ export const getCameras = async (): Promise<CameraItem[]> => {
 }
 
 export const deleteCamera = async (id: number): Promise<void> => {
-    await api.delete(`/user/deleteDevice`, {params: { device_id: id }
+    await api.delete(`/user/deleteDevice`, {data: { id }
     })
 }
 
@@ -40,7 +40,7 @@ export const getDiagnoses = async (): Promise<DiagnosisItem[]> => {
 }
 
 export const deleteDiagnosis = async (id: number): Promise<void> => {
-    await api.delete("/user/deleteDiagnosis", {params: { diagnose_id: id }
+    await api.delete("/user/deleteDiagnosis", {data: { id }
     })
 }
 ////////////////////////////
@@ -61,7 +61,6 @@ export interface PersonalDataPayload {
 
 export const getUserPersonalInfo = async (): Promise<UserPersonalInfo> => {
     const res = await api.get("/user/getMyInfo")
-    console.log("📥 Received personal info:", res.data) // 👈 this prints it to the console
     return res.data
 }
 
@@ -70,22 +69,50 @@ export const sendPersonalData = async (data: PersonalDataPayload): Promise<void>
     await api.post("/changePersonalInfo", data)
 }
 
-
+//////////////////////////// additional devices
 export const getAdditionalDevices = async (): Promise<CameraItem[]> => {
-    const response = await api.get("/")
+    const response = await api.get("user/getAdditionalDevices")
     return response.data.devices
 }
 
+export const addAdditionalDevice = async (name: string): Promise<void> => {
+    await api.post("/user/addAdditionalDevice", { name })
+}
+
+export const deleteAdditionalDevice = async (id: number): Promise<void> => {
+    await api.delete("/user/deleteAdditionalDevice", {
+        data: { id },
+    })
+}
 
 
+////////////////////////////
 
-export const addAccessory = async (name: string): Promise<void> => {
-    await api.post("/user/addAccessory", { name })
+
+export interface AnalysisItem {
+    id: number
+    name: string
+}
+
+export const getAnalyses = async (): Promise<AnalysisItem[]> => {
+    const response = await api.get("/user/getMethods")
+    return response.data.methods
 }
 
 export const addAnalysis = async (name: string): Promise<void> => {
-    await api.post("/user/addAnalysis", { name })
+    console.log("📤 Sending analysis to backend:", name)
+    await api.post("/user/addMethod", { name })
 }
+
+
+export const deleteAnalysis = async (id: number): Promise<void> => {
+    await api.delete("/user/deleteMethod", { data: { id } })
+}
+
+
+
+
+
 
 export const changePassword = async (data: {
     email: string
