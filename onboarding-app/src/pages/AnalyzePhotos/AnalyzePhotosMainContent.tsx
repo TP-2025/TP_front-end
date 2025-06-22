@@ -1,16 +1,18 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { ThumbsUp, ThumbsDown, Edit3, Calendar, Camera, User, CheckCircle, Clock, Plus, FileText } from "lucide-react"
+import { Edit3, Calendar, Camera, User, CheckCircle, Clock, Plus, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { getOriginalPictures, type OriginalPicture } from "@/api/analysePhotoApi"
+import { useEffect } from "react"
+import { getDiagnoses, getCameras, getAdditionalDevices } from "@/api/settingsApi"
 
 interface AnalysisResult {
     id: string
@@ -48,131 +50,6 @@ const analysisTypes = [
     },
 ]
 
-// Mock data - replace with your backend data
-const mockPhotos: Photo[] = [
-    {
-        id: "1",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Ľavé oko - Pacient A",
-        capturedDate: "2024-01-15",
-        camera: "Canon EOS R5",
-        patient: "Ján Novák",
-        diagnosis: "Zdravá sietnica",
-        device: "Fundus kamera Canon",
-        additionalDevice: "Angiograf Heidelberg",
-        analyses: [
-            {
-                id: "analysis-1",
-                type: "type1",
-                condition: "Zdravá sietnica",
-                confidence: 94,
-                description:
-                    "Vyšetrenie sietnice ukazuje normálne cievne vzory bez známok diabetickej retinopatia, makulárnej degenerácie alebo iných patologických zmien. Optický disk vyzerá zdravo s jasnými okrajmi a vhodným pomerom jamky k disku.",
-                recommendations: [
-                    "Pokračovať v pravidelných očných vyšetreniach",
-                    "Udržiavať zdravý životný štýl",
-                    "Sledovať akékoľvek zmeny v zraku",
-                ],
-                createdAt: "2024-01-15T10:30:00Z",
-                doctorNotes: "Pacient má výborný stav sietnice. Odporúčam kontrolu za 12 mesiacov.",
-            },
-            {
-                id: "analysis-2",
-                type: "type2",
-                condition: "Zdravá sietnica - pokročilá analýza",
-                confidence: 96,
-                description: "Pokročilá AI analýza potvrdila zdravý stav sietnice s vysokou presnosťou.",
-                recommendations: ["Pravidelné kontroly", "Zdravý životný štýl"],
-                createdAt: "2024-01-16T14:20:00Z",
-            },
-        ],
-        description: "Pacient bez zjavných problémov.",
-    },
-    {
-        id: "2",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Pravé oko - Pacient B",
-        capturedDate: "2024-01-16",
-        camera: "Nikon D850",
-        patient: "Jana Svobodová",
-        diagnosis: "Diabetická retinopatia",
-        device: "OCT Zeiss",
-        additionalDevice: "Laser Topcon",
-        analyses: [
-            {
-                id: "analysis-3",
-                type: "type2",
-                condition: "Mierná diabetická retinopatia",
-                confidence: 87,
-                description:
-                    "Viditeľné sú včasné príznaky diabetickej retinopatia s mikroaneuryzmami a malými krvácaninami. Stav sa zdá byť v miernom neproliferatívnom štádiu bez známok makulárneho edému.",
-                recommendations: [
-                    "Zvýšiť frekvenciu monitorovania",
-                    "Optimalizovať kontrolu cukru v krvi",
-                    "Zvážiť odoslanie k špecialistovi na sietnicové ochorenia",
-                ],
-                createdAt: "2024-01-16T09:15:00Z",
-                doctorNotes: "Potrebné sledovanie progresie. Kontrola za 3 mesiace.",
-            },
-        ],
-    },
-    {
-        id: "3",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Ľavé oko - Pacient C",
-        capturedDate: "2024-01-17",
-        camera: "Sony A7R IV",
-        patient: "Michal Novotný",
-        diagnosis: "Glaukóm",
-        device: "Fundus kamera Sony",
-        additionalDevice: "Perimeter Octopus",
-        analyses: [],
-    },
-    {
-        id: "4",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Pravé oko - Pacient D",
-        capturedDate: "2024-01-18",
-        camera: "Canon EOS R6",
-        patient: "Zuzana Krásna",
-        diagnosis: "Makulárna degenerácia",
-        device: "OCT Heidelberg",
-        additionalDevice: "Angiograf Zeiss",
-        analyses: [],
-    },
-    {
-        id: "5",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Ľavé oko - Pacient E",
-        capturedDate: "2024-01-19",
-        camera: "Nikon Z9",
-        patient: "Peter Veselý",
-        diagnosis: "Zdravá sietnica",
-        device: "Fundus kamera Nikon",
-        additionalDevice: "Biometer IOLMaster",
-        analyses: [],
-    },
-    {
-        id: "6",
-        src: "/placeholder.svg?height=300&width=300",
-        title: "Pravé oko - Pacient F",
-        capturedDate: "2024-01-20",
-        camera: "Sony A1",
-        patient: "Mária Kvetná",
-        diagnosis: "Katarakta",
-        device: "OCT Topcon",
-        additionalDevice: "Pachymeter Pentacam",
-        analyses: [],
-    },
-]
-
-// Get unique diagnosis and device options from mock data
-const diagnosisOptions = Array.from(new Set(mockPhotos.map((photo) => photo.diagnosis).filter(Boolean))) as string[]
-const deviceOptions = Array.from(new Set(mockPhotos.map((photo) => photo.device).filter(Boolean))) as string[]
-const additionalDeviceOptions = Array.from(
-    new Set(mockPhotos.map((photo) => photo.additionalDevice).filter(Boolean)),
-) as string[]
-
 export default function PhotoGallery() {
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -183,15 +60,22 @@ export default function PhotoGallery() {
     const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null)
     const [editingDoctorNotes, setEditingDoctorNotes] = useState<string | null>(null)
     const [doctorNotesText, setDoctorNotesText] = useState("")
+    const [diagnosisOptions, setDiagnosisOptions] = useState<{ id: string; name: string }[]>([])
+    const [deviceOptions, setDeviceOptions] = useState<{ id: string; name: string }[]>([])
+    const [additionalDeviceOptions, setAdditionalDeviceOptions] = useState<{ id: string; name: string }[]>([])
+
+    const [photos, setPhotos] = useState<Photo[]>([])
+    const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
+    const [photosError, setPhotosError] = useState<string | null>(null)
 
     const [filters, setFilters] = useState({
-        analyzed: "all", // "all", "analyzed", "not-analyzed"
-        eye: "all", // "all", "left", "right"
+        analyzed: "all",
+        eye: "all",
         patientName: "",
         diagnosis: "all",
         device: "all",
         additionalDevice: "all",
-        dateSort: "newest", // "newest", "oldest"
+        dateSort: "newest",
     })
 
     const handlePhotoClick = (photo: Photo) => {
@@ -215,8 +99,7 @@ export default function PhotoGallery() {
         const mockAnalysisResults = {
             type1: {
                 condition: "Základná analýza dokončená",
-                description:
-                    "Základná automatizovaná analýza bola dokončená. Obrázok ukazuje štruktúry sietnice s rôznymi vlastnosťami, ktoré vyžadujú profesionálnu interpretáciu. Táto analýza je len na referenčné účely a mala by byť preskúmaná kvalifikovaným oftalmológom.",
+                description: "Základné vyhodnotenie stavu sietnice",
                 recommendations: [
                     "Odporúča sa profesionálne posúdenie",
                     "Porovnať s predchádzajúcimi vyšetreniami",
@@ -298,7 +181,7 @@ export default function PhotoGallery() {
     const selectedAnalysis = selectedPhoto?.analyses.find((a) => a.id === selectedAnalysisId)
 
     const filteredAndSortedPhotos = useMemo(() => {
-        const filtered = mockPhotos.filter((photo) => {
+        const filtered = photos.filter((photo) => {
             // Filter by analysis status
             if (filters.analyzed === "analyzed" && photo.analyses.length === 0) return false
             if (filters.analyzed === "not-analyzed" && photo.analyses.length > 0) return false
@@ -324,7 +207,7 @@ export default function PhotoGallery() {
         })
 
         // Separate filtered and unfiltered photos
-        const unfiltered = mockPhotos.filter((photo) => !filtered.includes(photo))
+        const unfiltered = photos.filter((photo) => !filtered.includes(photo))
         const allPhotos = [...filtered, ...unfiltered]
 
         // Sort by date within each group
@@ -338,7 +221,73 @@ export default function PhotoGallery() {
         unfiltered.sort(sortByDate)
 
         return { filtered, unfiltered, all: allPhotos }
-    }, [filters])
+    }, [filters, photos])
+
+    const fetchPhotos = async () => {
+        setIsLoadingPhotos(true)
+        setPhotosError(null)
+
+        try {
+            const raw: OriginalPicture[] = await getOriginalPictures()
+            console.log("📷 Raw photos data:", raw)
+
+            const mapped: Photo[] = raw.map((item) => {
+                const apiBaseUrl = "http://davidovito.duckdns.org:8080"
+                // Ensure proper URL formatting
+                let imageUrl = item.path
+                if (!imageUrl.startsWith("http")) {
+                    imageUrl = imageUrl.startsWith("/") ? apiBaseUrl + imageUrl : apiBaseUrl + "/" + imageUrl
+                }
+
+                console.log("📷 Using image URL:", imageUrl)
+
+                const isLeftEye = item.eye?.toUpperCase() === "L"
+                const titleEye = isLeftEye ? "Ľavé" : item.eye?.toUpperCase() === "R" ? "Pravé" : "Neznáme"
+
+                return {
+                    id: item.id.toString(),
+                    src: imageUrl,
+                    title: `${titleEye} oko - Pacient #${item.patient_id}`,
+                    capturedDate: item.date || "Neznámy dátum",
+                    camera: "Neznáma kamera",
+                    patient: `Pacient #${item.patient_id}`,
+                    diagnosis: item.diagnosis_notes || undefined,
+                    device: item.device_id?.toString() || undefined,
+                    additionalDevice: item.additional_device_id?.toString() || undefined,
+                    analyses: [],
+                    description: item.technic_notes || undefined,
+                }
+            })
+
+            console.log("📷 Mapped photos:", mapped)
+            setPhotos(mapped)
+        } catch (err) {
+            console.error("Nepodarilo sa načítať fotky:", err)
+            setPhotosError("Nepodarilo sa načítať fotky.")
+        } finally {
+            setIsLoadingPhotos(false)
+        }
+    }
+
+    const fetchFilters = async () => {
+        try {
+            const [diagnoses, devices, additionalDevices] = await Promise.all([
+                getDiagnoses(),
+                getCameras(),
+                getAdditionalDevices(),
+            ])
+            setDiagnosisOptions(diagnoses.map((d) => ({ id: d.id.toString(), name: d.name })))
+            setDeviceOptions(devices.map((d) => ({ id: d.id.toString(), name: d.name })))
+            setAdditionalDeviceOptions(additionalDevices.map((d) => ({ id: d.id.toString(), name: d.name })))
+        } catch (error) {
+            console.error("Chyba pri načítaní filtrov:", error)
+        }
+    }
+
+    useEffect(() => {
+        fetchPhotos()
+        fetchFilters()
+    }, [])
 
     return (
         <div className="w-full">
@@ -399,10 +348,9 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Všetky</SelectItem>
-                                        {diagnosisOptions.map((diagnosis) => (
-                                            <SelectItem key={diagnosis} value={diagnosis}>
-                                                {diagnosis}
+                                        {diagnosisOptions.map((option) => (
+                                            <SelectItem key={option.id} value={option.name}>
+                                                {option.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -420,10 +368,9 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Všetky</SelectItem>
                                         {deviceOptions.map((device) => (
-                                            <SelectItem key={device} value={device}>
-                                                {device}
+                                            <SelectItem key={device.id} value={device.name}>
+                                                {device.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -441,10 +388,9 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Všetky</SelectItem>
                                         {additionalDeviceOptions.map((device) => (
-                                            <SelectItem key={device} value={device}>
-                                                {device}
+                                            <SelectItem key={device.id} value={device.name}>
+                                                {device.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -498,104 +444,142 @@ export default function PhotoGallery() {
                             >
                                 Vymazať filtre
                             </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    if (photos.length > 0) {
+                                        const testUrl = photos[0].src
+                                        console.log("🧪 Testing image URL:", testUrl)
+                                        const testImg = new Image()
+                                        testImg.onload = () => console.log("✅ Test image loaded successfully")
+                                        testImg.onerror = (e) => console.error("❌ Test image failed:", e)
+                                        testImg.src = testUrl
+                                    }
+                                }}
+                                className="mb-2"
+                            >
+                                Test Image Loading
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
-                {/* Filtered (prioritized) photos */}
-                {filteredAndSortedPhotos.filtered.map((photo) => (
-                    <Card
-                        key={photo.id}
-                        className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden opacity-100 py-0"
-                        onClick={() => handlePhotoClick(photo)}
-                    >
-                        <CardContent className="p-0">
-                            <div className="relative overflow-hidden">
-                                <img
-                                    src={photo.src || "/placeholder.svg"}
-                                    alt={photo.title}
-                                    className="w-full h-24 object-cover rounded-t-lg"
-                                />
-                                {/* Analysis status indicator */}
-                                <div className="absolute top-1 right-1">
-                                    {photo.analyses.length > 0 ? (
-                                        <div className="bg-green-500 text-white rounded-full p-1 flex items-center gap-1">
-                                            <CheckCircle className="h-3 w-3" />
-                                            <span className="text-xs font-medium">{photo.analyses.length}</span>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-orange-500 text-white rounded-full p-1">
-                                            <Clock className="h-3 w-3" />
+            {isLoadingPhotos ? (
+                <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+                </div>
+            ) : photosError ? (
+                <div className="text-red-500 text-center py-6">{photosError}</div>
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
+                    {/* Filtered (prioritized) photos */}
+                    {filteredAndSortedPhotos.filtered.map((photo) => (
+                        <Card
+                            key={photo.id}
+                            className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden opacity-100 py-0"
+                            onClick={() => handlePhotoClick(photo)}
+                        >
+                            <CardContent className="p-0">
+                                <div className="relative overflow-hidden">
+                                    <img
+                                        src={photo.src || "/placeholder.svg?height=96&width=150"}
+                                        alt={photo.title}
+                                        className="w-full h-24 object-cover rounded-t-lg"
+                                        onLoad={() => {
+                                            console.log("✅ Image loaded successfully:", photo.src)
+                                        }}
+                                        onError={(e) => {
+                                            console.error("❌ Image failed to load:", photo.src)
+                                            // Set a placeholder image on error
+                                            e.currentTarget.src = "/placeholder.svg?height=96&width=150"
+                                        }}
+                                    />
+                                    <div className="absolute top-1 right-1">
+                                        {photo.analyses.length > 0 ? (
+                                            <div className="bg-green-500 text-white rounded-full p-1 flex items-center gap-1">
+                                                <CheckCircle className="h-3 w-3" />
+                                                <span className="text-xs font-medium">{photo.analyses.length}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-orange-500 text-white rounded-full p-1">
+                                                <Clock className="h-3 w-3" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute inset-0 [&>*]:!hidden"></div>
+                                </div>
+                                <div className="p-2">
+                                    <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
+                                    <p className="text-xs text-muted-foreground truncate">{photo.patient}</p>
+                                    <p className="text-xs text-muted-foreground">{photo.capturedDate}</p>
+                                    {photo.analyses.length > 0 && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                            <span className="text-xs text-green-600">
+                        {photo.analyses.length} {photo.analyses.length === 1 ? "analýza" : "analýz"}
+                      </span>
                                         </div>
                                     )}
                                 </div>
-                                <div className="absolute inset-0 [&>*]:!hidden"></div>
-                            </div>
-                            <div className="p-2">
-                                <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
-                                <p className="text-xs text-muted-foreground truncate">{photo.patient}</p>
-                                <p className="text-xs text-muted-foreground">{photo.capturedDate}</p>
-                                {photo.analyses.length > 0 && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <CheckCircle className="h-3 w-3 text-green-500" />
-                                        <span className="text-xs text-green-600">
-                      {photo.analyses.length} {photo.analyses.length === 1 ? "analýza" : "analýz"}
-                    </span>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                            </CardContent>
+                        </Card>
+                    ))}
 
-                {/* Unfiltered (background) photos */}
-                {filteredAndSortedPhotos.unfiltered.map((photo) => (
-                    <Card
-                        key={photo.id}
-                        className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden opacity-30 grayscale py-0"
-                        onClick={() => handlePhotoClick(photo)}
-                    >
-                        <CardContent className="p-0">
-                            <div className="relative overflow-hidden">
-                                <img
-                                    src={photo.src || "/placeholder.svg"}
-                                    alt={photo.title}
-                                    className="w-full h-24 object-cover rounded-t-lg"
-                                />
-                                {/* Analysis status indicator */}
-                                <div className="absolute top-1 right-1">
-                                    {photo.analyses.length > 0 ? (
-                                        <div className="bg-green-500 text-white rounded-full p-1 flex items-center gap-1">
-                                            <CheckCircle className="h-3 w-3" />
-                                            <span className="text-xs font-medium">{photo.analyses.length}</span>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-orange-500 text-white rounded-full p-1">
-                                            <Clock className="h-3 w-3" />
+                    {/* Unfiltered (background) photos */}
+                    {filteredAndSortedPhotos.unfiltered.map((photo) => (
+                        <Card
+                            key={photo.id}
+                            className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden opacity-30 grayscale py-0"
+                            onClick={() => handlePhotoClick(photo)}
+                        >
+                            <CardContent className="p-0">
+                                <div className="relative overflow-hidden">
+                                    <img
+                                        src={photo.src || "/placeholder.svg?height=96&width=150"}
+                                        alt={photo.title}
+                                        className="w-full h-24 object-cover rounded-t-lg"
+                                        onLoad={() => {
+                                            console.log("✅ Image loaded successfully:", photo.src)
+                                        }}
+                                        onError={(e) => {
+                                            console.error("❌ Image failed to load:", photo.src)
+                                            e.currentTarget.src = "/placeholder.svg?height=96&width=150"
+                                        }}
+                                    />
+                                    <div className="absolute top-1 right-1">
+                                        {photo.analyses.length > 0 ? (
+                                            <div className="bg-green-500 text-white rounded-full p-1 flex items-center gap-1">
+                                                <CheckCircle className="h-3 w-3" />
+                                                <span className="text-xs font-medium">{photo.analyses.length}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-orange-500 text-white rounded-full p-1">
+                                                <Clock className="h-3 w-3" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute inset-0 [&>*]:!hidden"></div>
+                                </div>
+                                <div className="p-2">
+                                    <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
+                                    <p className="text-xs text-muted-foreground truncate">{photo.patient}</p>
+                                    <p className="text-xs text-muted-foreground">{photo.capturedDate}</p>
+                                    {photo.analyses.length > 0 && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                            <span className="text-xs text-green-600">
+                        {photo.analyses.length} {photo.analyses.length === 1 ? "analýza" : "analýz"}
+                      </span>
                                         </div>
                                     )}
                                 </div>
-                                <div className="absolute inset-0 [&>*]:!hidden"></div>
-                            </div>
-                            <div className="p-2">
-                                <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
-                                <p className="text-xs text-muted-foreground truncate">{photo.patient}</p>
-                                <p className="text-xs text-muted-foreground">{photo.capturedDate}</p>
-                                {photo.analyses.length > 0 && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <CheckCircle className="h-3 w-3 text-green-500" />
-                                        <span className="text-xs text-green-600">
-                      {photo.analyses.length} {photo.analyses.length === 1 ? "analýza" : "analýz"}
-                    </span>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
             {/* Dialog content */}
             <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
@@ -618,9 +602,16 @@ export default function PhotoGallery() {
                             <div className="space-y-4 flex flex-col">
                                 <div className="flex-1 min-h-0">
                                     <img
-                                        src={selectedPhoto.src || "/placeholder.svg"}
+                                        src={selectedPhoto.src || "/placeholder.svg?height=400&width=600"}
                                         alt={selectedPhoto.title}
                                         className="w-full h-full object-contain rounded-lg border bg-white"
+                                        onLoad={() => {
+                                            console.log("✅ Modal image loaded successfully:", selectedPhoto.src)
+                                        }}
+                                        onError={(e) => {
+                                            console.error("❌ Modal image failed to load:", selectedPhoto.src)
+                                            e.currentTarget.src = "/placeholder.svg?height=400&width=600"
+                                        }}
                                     />
                                 </div>
 
@@ -763,132 +754,6 @@ export default function PhotoGallery() {
                                                     </div>
                                                 ))}
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                {/* Selected Analysis Details */}
-                                {selectedAnalysis && (
-                                    <Card className="py-0">
-                                        <CardContent className="p-4">
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h3 className="font-semibold mb-2">Výsledky analýzy</h3>
-                                                    <div className="text-sm text-muted-foreground mb-1">
-                                                        {getAnalysisTypeLabel(selectedAnalysis.type)} •{" "}
-                                                        {new Date(selectedAnalysis.createdAt).toLocaleString("sk-SK")}
-                                                    </div>
-                                                    <div className="text-sm font-medium">{selectedAnalysis.confidence}% spoľahlivosť</div>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="font-medium text-sm mb-2">Stav</h4>
-                                                    <p className="text-sm bg-muted p-3 rounded">{selectedAnalysis.condition}</p>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="font-medium text-sm mb-2">Popis</h4>
-                                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                                        {selectedAnalysis.description}
-                                                    </p>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="font-medium text-sm mb-2">Odporúčania</h4>
-                                                    <ul className="text-sm text-muted-foreground space-y-1">
-                                                        {selectedAnalysis.recommendations.map((rec, index) => (
-                                                            <li key={index} className="flex items-start gap-2">
-                                                                <span className="text-primary mt-1">•</span>
-                                                                {rec}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-
-                                                <Separator />
-
-                                                {/* Feedback Section */}
-                                                <div>
-                                                    <h4 className="font-medium text-sm mb-3">Ohodnotiť túto analýzu</h4>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant={feedback === "like" ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => handleFeedback("like")}
-                                                        >
-                                                            <ThumbsUp className="h-4 w-4 mr-1" />
-                                                            Užitočné
-                                                        </Button>
-                                                        <Button
-                                                            variant={feedback === "dislike" ? "destructive" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => handleFeedback("dislike")}
-                                                        >
-                                                            <ThumbsDown className="h-4 w-4 mr-1" />
-                                                            Neužitočné
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                {/* Doctor's Notes for Selected Analysis */}
-                                {selectedAnalysis && (
-                                    <Card className="py-0">
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h3 className="font-semibold">Lekárske poznámky</h3>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setEditingDoctorNotes(selectedAnalysis.id)
-                                                        setDoctorNotesText(selectedAnalysis.doctorNotes || "")
-                                                    }}
-                                                >
-                                                    <Edit3 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-
-                                            {editingDoctorNotes === selectedAnalysis.id ? (
-                                                <div className="space-y-3">
-                                                    <Textarea
-                                                        placeholder="Pridajte lekárske poznámky k tejto analýze..."
-                                                        value={doctorNotesText}
-                                                        onChange={(e) => setDoctorNotesText(e.target.value)}
-                                                        rows={4}
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        <Button size="sm" onClick={() => handleSaveDoctorNotes(selectedAnalysis.id)}>
-                                                            Uložiť
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => {
-                                                                setEditingDoctorNotes(null)
-                                                                setDoctorNotesText("")
-                                                            }}
-                                                        >
-                                                            Zrušiť
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="text-sm text-muted-foreground">
-                                                    {selectedAnalysis.doctorNotes ? (
-                                                        <div className="whitespace-pre-wrap break-words bg-blue-50 p-3 rounded border-l-4 border-blue-200">
-                                                            {selectedAnalysis.doctorNotes}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-center py-4 text-muted-foreground">
-                                                            Žiadne lekárske poznámky. Kliknite na tlačidlo úprav pre pridanie poznámok.
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
                                         </CardContent>
                                     </Card>
                                 )}

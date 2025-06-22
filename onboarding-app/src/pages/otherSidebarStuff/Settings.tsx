@@ -31,10 +31,6 @@ import { sendPersonalData } from "@/api/settingsApi"
 
 import { getAnalyses, addAnalysis, deleteAnalysis } from "@/api/settingsApi"
 
-
-
-
-
 interface CameraItem {
     id: number
     name: string
@@ -85,12 +81,12 @@ export default function Settings() {
     const [isAddingAdditionalDevice, setIsAddingAdditionalDevice] = useState(false)
     const [isLoadingAdditionalDevices, setIsLoadingAdditionalDevices] = useState(true)
     const [deletingAdditionalDeviceId, setDeletingAdditionalDeviceId] = useState<number | null>(null)
+    const [additionalDevicesError, setAdditionalDevicesError] = useState<string | null>(null)
 
     const [isLoadingAnalyses, setIsLoadingAnalyses] = useState(true)
     const [analysesError, setAnalysesError] = useState<string | null>(null)
     const [isAddingAnalysis, setIsAddingAnalysis] = useState(false)
     const [deletingAnalysisId, setDeletingAnalysisId] = useState<number | null>(null)
-
 
     const [notification, setNotification] = useState<NotificationState>({
         isOpen: false,
@@ -151,10 +147,12 @@ export default function Settings() {
     const fetchAdditionalDevices = async () => {
         try {
             setIsLoadingAdditionalDevices(true)
+            setAdditionalDevicesError(null)
             const data = await getAdditionalDevices()
             setAdditionalDevices(data)
         } catch (error) {
-            showNotification("error", "Chyba", "Nepodarilo sa načítať prídavné zariadenia")
+            console.error("Error fetching additional devices:", error)
+            setAdditionalDevicesError("Nepodarilo sa načítať prídavné zariadenia")
         } finally {
             setIsLoadingAdditionalDevices(false)
         }
@@ -289,7 +287,8 @@ export default function Settings() {
             setAdditionalDeviceForm({ name: "" })
             showNotification("success", "Úspech", "Prídavné zariadenie bolo pridané")
         } catch (error) {
-            showNotification("error", "Chyba", "Nepodarilo sa pridať prídavné zariadenie")
+            console.error("Add additional device error:", error)
+            setAdditionalDevicesError("Nepodarilo sa pridať prídavné zariadenie")
         } finally {
             setIsAddingAdditionalDevice(false)
         }
@@ -302,12 +301,13 @@ export default function Settings() {
             await fetchAdditionalDevices()
             showNotification("success", "Úspech", "Zariadenie bolo vymazané")
         } catch (error) {
-            showNotification("error", "Chyba", "Nepodarilo sa vymazať zariadenie")
+            console.error("Delete additional device error:", error)
+            setAdditionalDevicesError("Nepodarilo sa vymazať zariadenie")
         } finally {
             setDeletingAdditionalDeviceId(null)
         }
     }
-    
+
     const handleAddDiagnosis = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!diagnosisForm.name.trim()) return
@@ -465,17 +465,19 @@ export default function Settings() {
                         <Target className="w-4 h-4" />
                         Prídavné zariadenia
                     </button>
-                    <button
-                        onClick={() => setActiveTab("analyses")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            activeTab === "analyses"
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                        <BarChart3 className="w-4 h-4" />
-                        Analýzy
-                    </button>
+                    {user?.role_id === 4 && (
+                        <button
+                            onClick={() => setActiveTab("analyses")}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                activeTab === "analyses"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                            <BarChart3 className="w-4 h-4" />
+                            Analýzy
+                        </button>
+                    )}
                     <button
                         onClick={() => setActiveTab("diagnosis")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -875,6 +877,13 @@ export default function Settings() {
                                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
                                     <span>Načítavam zariadenia...</span>
                                 </div>
+                            ) : additionalDevicesError ? (
+                                <div className="text-center py-8">
+                                    <p className="text-red-600 mb-2">{additionalDevicesError}</p>
+                                    <Button variant="outline" size="sm" onClick={fetchAdditionalDevices}>
+                                        Skúsiť znovu
+                                    </Button>
+                                </div>
                             ) : additionalDevices.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-4">Žiadne samostatné zariadenia neboli pridané</p>
                             ) : (
@@ -909,7 +918,7 @@ export default function Settings() {
                 </div>
             )}
 
-            {activeTab === "analyses" && (
+            {activeTab === "analyses" && user?.role_id === 4 &&(
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
@@ -944,7 +953,6 @@ export default function Settings() {
                                         </>
                                     )}
                                 </Button>
-
                             </form>
                         </CardContent>
                     </Card>
@@ -985,14 +993,13 @@ export default function Settings() {
                                                 onClick={() => handleDeleteAnalysis(analysis.id)}
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                 disabled={deletingAnalysisId === analysis.id}
-                                                >
+                                            >
                                                 {deletingAnalysisId === analysis.id ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     <Trash2 className="h-4 w-4" />
                                                 )}
-                                        </Button>
-
+                                            </Button>
                                         </div>
                                     ))}
                                 </div>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Upload, X, Check, User, Mail } from 'lucide-react'
+import { Upload, X, Check, User, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -16,8 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/Security/authContext"
 import { uploadPhotoWithMetadata } from "@/api/addPhotoApi"
-import { getCameras, type CameraItem } from "@/api/settingsApi" // Adjust path if needed
+import { getCameras, type CameraItem } from "@/api/settingsApi"
+import { getAdditionalDevices } from "@/api/settingsApi"
 import { format } from "date-fns"
+
+interface AdditionalDevice {
+    id: number
+    name: string
+}
 
 interface PhotoInfo {
     id: string
@@ -28,7 +34,7 @@ interface PhotoInfo {
     eye: "left" | "right" | null
     device: string | null
     additionalDevice: string | null
-    quality: "vyborná" | "dobrá" | "zlá" | null
+    quality: "dobrá" | "zlá" | null
     dateTaken: string
 }
 
@@ -47,7 +53,7 @@ export function PhotoUploader() {
     const [inputValue, setInputValue] = useState("")
     const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
     const [selectedAdditionalDevice, setSelectedAdditionalDevice] = useState<string | null>(null)
-    const [selectedQuality, setSelectedQuality] = useState<"vyborná" | "dobrá" | "zlá" | null>(null)
+    const [selectedQuality, setSelectedQuality] = useState<"dobrá" | "zlá" | null>(null)
     const [dateTaken, setDateTaken] = useState(() => new Date().toISOString().split("T")[0])
     const { roleId } = useAuth()
 
@@ -56,10 +62,16 @@ export function PhotoUploader() {
     const [isUploading, setIsUploading] = useState(false)
     const [uploadError, setUploadError] = useState<string | null>(null)
 
+    const [additionalDevices, setAdditionalDevices] = useState<AdditionalDevice[]>([])
+
+    const [isLoadingPatients, setIsLoadingPatients] = useState(true)
+    const [isLoadingCameras, setIsLoadingCameras] = useState(true)
+    const [isLoadingAdditionalDevices, setIsLoadingAdditionalDevices] = useState(true)
 
     useEffect(() => {
         const fetchPatients = async () => {
             try {
+                setIsLoadingPatients(true)
                 const response =
                     roleId === 4 || roleId === 2
                         ? await import("@/api/patientApi").then((mod) => mod.getPatients())
@@ -69,6 +81,8 @@ export function PhotoUploader() {
             } catch (error) {
                 console.error("❌ Failed to load patients:", error)
                 setPatients([])
+            } finally {
+                setIsLoadingPatients(false)
             }
         }
 
@@ -76,30 +90,43 @@ export function PhotoUploader() {
     }, [roleId])
 
     useEffect(() => {
-        const fetchPatientsAndCameras = async () => {
+        const fetchPatientsAndDevices = async () => {
             try {
-                const patientResponse =
+                setIsLoadingPatients(true)
+                const patientsData =
                     roleId === 4 || roleId === 2
                         ? await import("@/api/patientApi").then((mod) => mod.getPatients())
                         : await getMyPatients()
-                setPatients(patientResponse)
+                setPatients(patientsData)
             } catch (error) {
                 console.error("❌ Failed to load patients:", error)
-                setPatients([])
+            } finally {
+                setIsLoadingPatients(false)
             }
 
             try {
-                const cameraResponse = await getCameras()
-                setCameras(cameraResponse)
+                setIsLoadingCameras(true)
+                const cameraData = await getCameras()
+                setCameras(cameraData)
             } catch (error) {
                 console.error("❌ Failed to load cameras:", error)
-                setCameras([])
+            } finally {
+                setIsLoadingCameras(false)
+            }
+
+            try {
+                setIsLoadingAdditionalDevices(true)
+                const additionalData = await getAdditionalDevices()
+                setAdditionalDevices(additionalData)
+            } catch (error) {
+                console.error("❌ Failed to load additional devices:", error)
+            } finally {
+                setIsLoadingAdditionalDevices(false)
             }
         }
 
-        fetchPatientsAndCameras()
+        fetchPatientsAndDevices()
     }, [roleId])
-
 
     const filteredPatients = patients.filter((patient) => {
         if (!inputValue) return true
@@ -177,7 +204,10 @@ export function PhotoUploader() {
             await uploadPhotoWithMetadata(photoFile, {
                 patient_id: selectedPatient.id,
                 device_id: selectedDevice && selectedDevice !== "none" ? Number(selectedDevice) : undefined,
-                additional_equipment_id: selectedAdditionalDevice && selectedAdditionalDevice !== "none" ? Number(selectedAdditionalDevice) : undefined,
+                additional_equipment_id:
+                    selectedAdditionalDevice && selectedAdditionalDevice !== "none"
+                        ? Number(selectedAdditionalDevice)
+                        : undefined,
                 quality: selectedQuality === "dobrá" ? "Dobra" : "Zla",
                 technic_notes: notes || undefined,
                 eye: selectedEye === "left" ? "l" : selectedEye === "right" ? "r" : undefined,
@@ -306,7 +336,7 @@ export function PhotoUploader() {
                             <PopoverContent className="w-[300px] p-0">
                                 <Command>
                                     <CommandInput placeholder="Search patients..." value={inputValue} onValueChange={setInputValue} />
-                                    <CommandEmpty>Pacient nebol nájdený.</CommandEmpty>
+                                    <CommandEmpty>{isLoadingPatients ? "Načítavam pacientov..." : "Pacient nebol nájdený."}</CommandEmpty>
                                     <CommandList>
                                         <CommandGroup>
                                             {filteredPatients.map((patient) => (
@@ -370,8 +400,14 @@ export function PhotoUploader() {
                                         <SelectValue placeholder="Vyber hlavné zariadenie..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {cameras.length === 0 ? (
-                                            <SelectItem value="none" disabled>Žiadne zariadenia</SelectItem>
+                                        {isLoadingCameras ? (
+                                            <SelectItem value="loading" disabled>
+                                                Načítavam zariadenia...
+                                            </SelectItem>
+                                        ) : cameras.length === 0 ? (
+                                            <SelectItem value="none" disabled>
+                                                Žiadne zariadenia
+                                            </SelectItem>
                                         ) : (
                                             cameras.map((camera) => (
                                                 <SelectItem key={camera.id} value={String(camera.id)}>
@@ -392,22 +428,20 @@ export function PhotoUploader() {
                                         <SelectValue placeholder="Vyber pridavné zariadenie..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">Žiadne</SelectItem>
-                                        <SelectItem value="fundus-camera-1">Fundus Camera - Model A</SelectItem>
-                                        <SelectItem value="fundus-camera-2">Fundus Camera - Model B</SelectItem>
-                                        <SelectItem value="oct-scanner-1">OCT Scanner - Cirrus HD</SelectItem>
-                                        <SelectItem value="oct-scanner-2">OCT Scanner - Spectralis</SelectItem>
-                                        <SelectItem value="slit-lamp-1">Slit Lamp - Haag Streit</SelectItem>
-                                        <SelectItem value="slit-lamp-2">Slit Lamp - Zeiss</SelectItem>
-                                        <SelectItem value="retinal-camera-1">Retinal Camera - Canon</SelectItem>
-                                        <SelectItem value="retinal-camera-2">Retinal Camera - Topcon</SelectItem>
-                                        <SelectItem value="corneal-topographer">Corneal Topographer</SelectItem>
-                                        <SelectItem value="visual-field-analyzer">Visual Field Analyzer</SelectItem>
-                                        <SelectItem value="pachymeter">Pachymeter</SelectItem>
-                                        <SelectItem value="tonometer">Tonometer</SelectItem>
-                                        <SelectItem value="biometer">Biometer</SelectItem>
-                                        <SelectItem value="endothelial-microscope">Endothelial Microscope</SelectItem>
-                                        <SelectItem value="other-additional">Iné pridavné zariadenie</SelectItem>
+                                        {isLoadingAdditionalDevices ? (
+                                            <SelectItem value="loading" disabled>
+                                                Načítavam zariadenia...
+                                            </SelectItem>
+                                        ) : (
+                                            <>
+                                                <SelectItem value="none">Žiadne</SelectItem>
+                                                {additionalDevices.map((device) => (
+                                                    <SelectItem key={device.id} value={String(device.id)}>
+                                                        {device.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -419,13 +453,12 @@ export function PhotoUploader() {
                             <Label htmlFor="quality">Kvalita</Label>
                             <Select
                                 value={selectedQuality || ""}
-                                onValueChange={(value) => setSelectedQuality(value as "vyborná" | "dobrá" | "zlá")}
+                                onValueChange={(value) => setSelectedQuality(value as "dobrá" | "zlá")}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Vyber kvalitu..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="vyborná">Vyborná</SelectItem>
                                     <SelectItem value="dobrá">Dobrá</SelectItem>
                                     <SelectItem value="zlá">Zlá</SelectItem>
                                 </SelectContent>
@@ -456,11 +489,7 @@ export function PhotoUploader() {
                     )}
 
                     <div className="flex space-x-2">
-                        <Button
-                            onClick={savePhotoInfo}
-                            className="flex-1"
-                            disabled={!photo || isUploading}
-                        >
+                        <Button onClick={savePhotoInfo} className="flex-1" disabled={!photo || isUploading}>
                             {isUploading ? "Ukladám..." : "Ulož informácie"}
                         </Button>
                         <Button variant="outline" onClick={resetForm}>
