@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Edit3, Calendar, Camera, User, CheckCircle, Clock, Plus, FileText } from "lucide-react"
+import { Calendar, Camera, User, CheckCircle, Clock, Plus, Edit3, ThumbsUp, ThumbsDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { getOriginalPictures, type OriginalPicture } from "@/api/analysePhotoApi"
 import { useEffect } from "react"
 import { getDiagnoses, getCameras, getAdditionalDevices } from "@/api/settingsApi"
+import { type AnalysisItem, getAnalyses } from "@/api/settingsApi"
 
 interface AnalysisResult {
     id: string
@@ -22,7 +24,6 @@ interface AnalysisResult {
     description: string
     recommendations: string[]
     createdAt: string
-    doctorNotes?: string
 }
 
 interface Photo {
@@ -39,16 +40,111 @@ interface Photo {
     description?: string
 }
 
-// Analysis types
-const analysisTypes = [
-    { value: "type1", label: "Typ 1 - Základná analýza", description: "Základné vyhodnotenie stavu sietnice" },
-    { value: "type2", label: "Typ 2 - Pokročilá analýza", description: "Detailná analýza s AI diagnostikou" },
-    {
-        value: "type3",
-        label: "Typ 3 - Špecializovaná analýza",
-        description: "Špecializovaná analýza pre konkrétne ochorenia",
-    },
-]
+// Random analysis text generators
+const generateRandomCondition = () => {
+    const conditions = [
+        "Normálne nálezy sietnice",
+        "Mierny edém makuly",
+        "Diabetická retinopatia - počiatočné štádium",
+        "Glaukómové zmeny optického disku",
+        "Hypertenzívna retinopatia",
+        "Vekové zmeny makuly",
+        "Cievne abnormality sietnice",
+        "Retinálne krvácanie",
+        "Druzy v makulárnej oblasti",
+        "Neovaskularizácia sietnice",
+        "Atrofia optického nervu",
+        "Papilledém",
+        "Centrálna seróza chorioretinopátia",
+        "Epiretinálna membrána",
+        "Vitreoretinálna trakcia",
+    ]
+    return conditions[Math.floor(Math.random() * conditions.length)]
+}
+
+const generateRandomDescription = () => {
+    const anatomicalParts = [
+        "optický disk",
+        "makula",
+        "cievny systém",
+        "sietnica",
+        "fovea",
+        "peripapilárna oblasť",
+        "temporálne kvadranty",
+        "nazálne kvadranty",
+        "periférna sietnica",
+        "vitreoretinálne rozhranie",
+    ]
+
+    const findings = [
+        "vykazuje normálnu morfológiu",
+        "má správnu farbu a kontúry",
+        "ukazuje patologické zmeny",
+        "má zmenené pigmentácie",
+        "vykazuje edematózne zmeny",
+        "má abnormálne cievne vzory",
+        "ukazuje známky zápalového procesu",
+        "má degeneratívne zmeny",
+        "vykazuje ischemické oblasti",
+        "má mikroaneuryzmata",
+        "ukazuje tvrdé exsudáty",
+        "má mäkké exsudáty",
+        "vykazuje hemorágie",
+    ]
+
+    const assessments = [
+        "Celkový stav oka je v rámci fyziologických hodnôt.",
+        "Pozorované zmeny si vyžadujú ďalšie sledovanie.",
+        "Odporúča sa konzultácia so špecializovaným oftalmológom.",
+        "Nálezy sú konzistentné s vekovo-primeranými zmenami.",
+        "Detekované abnormality môžu indikovať systémové ochorenie.",
+        "Progresívne zmeny si vyžadujú pravidelné kontroly.",
+        "Akútne zmeny si vyžadujú okamžitú pozornosť.",
+        "Chronické zmeny sú stabilné bez progresie.",
+    ]
+
+    const part1 = anatomicalParts[Math.floor(Math.random() * anatomicalParts.length)]
+    const finding1 = findings[Math.floor(Math.random() * findings.length)]
+    const part2 = anatomicalParts[Math.floor(Math.random() * anatomicalParts.length)]
+    const finding2 = findings[Math.floor(Math.random() * findings.length)]
+    const assessment = assessments[Math.floor(Math.random() * assessments.length)]
+
+    return `Detailná analýza ukázala, že ${part1} ${finding1}. ${part2.charAt(0).toUpperCase() + part2.slice(1)} ${finding2}. ${assessment} Odporúča sa korelácia s klinickými príznakmi a anamnézou pacienta pre kompletnú diagnostiku.`
+}
+
+const generateRandomRecommendations = () => {
+    const allRecommendations = [
+        "Odporúča sa kontrola u oftalmológa do 3 mesiacov",
+        "Pravidelné sledovanie progresie zmien",
+        "Korelácia s celkovým zdravotným stavom pacienta",
+        "Doplnenie OCT vyšetrenia pre detailnejšiu analýzu",
+        "Fluorescenčná angiografia pre hodnotenie cievneho systému",
+        "Kontrola vnútroočného tlaku",
+        "Sledovanie systémového krvného tlaku",
+        "Kontrola hladiny cukru v krvi",
+        "Úprava životného štýlu a stravovania",
+        "Pravidelné cvičenie a fyzická aktivita",
+        "Ochrana očí pred UV žiarením",
+        "Suplementácia vitamínov pre zdravie očí",
+        "Konzultácia s internistom",
+        "Genetické poradenstvo pri rodinnej anamnéze",
+        "Psychologická podpora pri zhoršení zraku",
+    ]
+
+    const numRecommendations = Math.floor(Math.random() * 4) + 2 // 2-5 recommendations
+    const selectedRecommendations = []
+    const usedIndices = new Set()
+
+    while (selectedRecommendations.length < numRecommendations) {
+        const index = Math.floor(Math.random() * allRecommendations.length)
+        if (!usedIndices.has(index)) {
+            usedIndices.add(index)
+            selectedRecommendations.push(allRecommendations[index])
+        }
+    }
+
+    return selectedRecommendations
+}
 
 export default function PhotoGallery() {
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
@@ -58,8 +154,6 @@ export default function PhotoGallery() {
     const [feedback, setFeedback] = useState<"like" | "dislike" | null>(null)
     const [selectedAnalysisType, setSelectedAnalysisType] = useState("type1")
     const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null)
-    const [editingDoctorNotes, setEditingDoctorNotes] = useState<string | null>(null)
-    const [doctorNotesText, setDoctorNotesText] = useState("")
     const [diagnosisOptions, setDiagnosisOptions] = useState<{ id: string; name: string }[]>([])
     const [deviceOptions, setDeviceOptions] = useState<{ id: string; name: string }[]>([])
     const [additionalDeviceOptions, setAdditionalDeviceOptions] = useState<{ id: string; name: string }[]>([])
@@ -67,6 +161,7 @@ export default function PhotoGallery() {
     const [photos, setPhotos] = useState<Photo[]>([])
     const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
     const [photosError, setPhotosError] = useState<string | null>(null)
+    const [analysisTypes, setAnalysisTypes] = useState<AnalysisItem[]>([])
 
     const [filters, setFilters] = useState({
         analyzed: "all",
@@ -84,7 +179,6 @@ export default function PhotoGallery() {
         setIsEditingDescription(false)
         setFeedback(null)
         setSelectedAnalysisId(photo.analyses.length > 0 ? photo.analyses[0].id : null)
-        setEditingDoctorNotes(null)
     }
 
     const handleAnalyze = async () => {
@@ -92,51 +186,18 @@ export default function PhotoGallery() {
 
         setIsAnalyzing(true)
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        // Simulate API call with random delay
+        const delay = Math.floor(Math.random() * 3000) + 1500 // 1.5-4.5 seconds
+        await new Promise((resolve) => setTimeout(resolve, delay))
 
-        // Mock analysis results based on type
-        const mockAnalysisResults = {
-            type1: {
-                condition: "Základná analýza dokončená",
-                description: "Základné vyhodnotenie stavu sietnice",
-                recommendations: [
-                    "Odporúča sa profesionálne posúdenie",
-                    "Porovnať s predchádzajúcimi vyšetreniami",
-                    "Sledovať príznaky pacienta",
-                ],
-            },
-            type2: {
-                condition: "Pokročilá analýza dokončená",
-                description:
-                    "Pokročilá AI analýza identifikovala detailné charakteristiky sietnice. Použité boli algoritmy hlbokého učenia na detekciu jemných zmien v cievnom systéme a morfológii sietnice. Výsledky ukazujú komplexný obraz zdravotného stavu oka.",
-                recommendations: [
-                    "Detailné vyhodnotenie špecialistom",
-                    "Korelácia s klinickými príznakmi",
-                    "Sledovanie progresie v čase",
-                ],
-            },
-            type3: {
-                condition: "Špecializovaná analýza dokončená",
-                description:
-                    "Špecializovaná analýza zameraná na konkrétne patológie bola vykonaná. Použité boli špecifické algoritmy na detekciu diabetickej retinopatia, glaukómu a makulárnych ochorení. Analýza poskytuje cielené hodnotenie rizikových faktorov.",
-                recommendations: [
-                    "Konzultácia s retinológom",
-                    "Špecifické diagnostické testy",
-                    "Individualizovaný liečebný plán",
-                ],
-            },
-        }
-
-        const selectedResult = mockAnalysisResults[selectedAnalysisType as keyof typeof mockAnalysisResults]
-
+        // Generate random analysis results
         const newAnalysis: AnalysisResult = {
             id: `analysis-${Date.now()}`,
             type: selectedAnalysisType,
-            condition: selectedResult.condition,
-            confidence: Math.floor(Math.random() * 20) + 80,
-            description: selectedResult.description,
-            recommendations: selectedResult.recommendations,
+            condition: generateRandomCondition(),
+            confidence: Math.floor(Math.random() * 25) + 75, // 75-99% confidence
+            description: generateRandomDescription(),
+            recommendations: generateRandomRecommendations(),
             createdAt: new Date().toISOString(),
         }
 
@@ -162,20 +223,8 @@ export default function PhotoGallery() {
         setSelectedPhoto((prev) => (prev ? { ...prev, description: userDescription } : null))
     }
 
-    const handleSaveDoctorNotes = (analysisId: string) => {
-        setSelectedPhoto((prev) => {
-            if (!prev) return null
-            const updatedAnalyses = prev.analyses.map((analysis) =>
-                analysis.id === analysisId ? { ...analysis, doctorNotes: doctorNotesText } : analysis,
-            )
-            return { ...prev, analyses: updatedAnalyses }
-        })
-        setEditingDoctorNotes(null)
-        setDoctorNotesText("")
-    }
-
-    const getAnalysisTypeLabel = (type: string) => {
-        return analysisTypes.find((t) => t.value === type)?.label || type
+    const getAnalysisTypeLabel = (id: string) => {
+        return analysisTypes.find((type) => type.id.toString() === id)?.name || id
     }
 
     const selectedAnalysis = selectedPhoto?.analyses.find((a) => a.id === selectedAnalysisId)
@@ -208,7 +257,6 @@ export default function PhotoGallery() {
 
         // Separate filtered and unfiltered photos
         const unfiltered = photos.filter((photo) => !filtered.includes(photo))
-        const allPhotos = [...filtered, ...unfiltered]
 
         // Sort by date within each group
         const sortByDate = (a: Photo, b: Photo) => {
@@ -220,7 +268,7 @@ export default function PhotoGallery() {
         filtered.sort(sortByDate)
         unfiltered.sort(sortByDate)
 
-        return { filtered, unfiltered, all: allPhotos }
+        return { filtered, unfiltered }
     }, [filters, photos])
 
     const fetchPhotos = async () => {
@@ -254,7 +302,7 @@ export default function PhotoGallery() {
                     diagnosis: item.diagnosis_notes || undefined,
                     device: item.device_id?.toString() || undefined,
                     additionalDevice: item.additional_device_id?.toString() || undefined,
-                    analyses: [],
+                    analyses: [], // Start with empty analyses array
                     description: item.technic_notes || undefined,
                 }
             })
@@ -284,9 +332,19 @@ export default function PhotoGallery() {
         }
     }
 
+    const fetchAnalysisTypes = async () => {
+        try {
+            const types = await getAnalyses()
+            setAnalysisTypes(types)
+        } catch (error) {
+            console.error("Chyba pri načítaní typov analýz:", error)
+        }
+    }
+
     useEffect(() => {
         fetchPhotos()
         fetchFilters()
+        fetchAnalysisTypes()
     }, [])
 
     return (
@@ -348,6 +406,7 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="all">Všetky</SelectItem>
                                         {diagnosisOptions.map((option) => (
                                             <SelectItem key={option.id} value={option.name}>
                                                 {option.name}
@@ -368,6 +427,7 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="all">Všetky</SelectItem>
                                         {deviceOptions.map((device) => (
                                             <SelectItem key={device.id} value={device.name}>
                                                 {device.name}
@@ -388,6 +448,7 @@ export default function PhotoGallery() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="all">Všetky</SelectItem>
                                         {additionalDeviceOptions.map((device) => (
                                             <SelectItem key={device.id} value={device.name}>
                                                 {device.name}
@@ -444,23 +505,6 @@ export default function PhotoGallery() {
                             >
                                 Vymazať filtre
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    if (photos.length > 0) {
-                                        const testUrl = photos[0].src
-                                        console.log("🧪 Testing image URL:", testUrl)
-                                        const testImg = new Image()
-                                        testImg.onload = () => console.log("✅ Test image loaded successfully")
-                                        testImg.onerror = (e) => console.error("❌ Test image failed:", e)
-                                        testImg.src = testUrl
-                                    }
-                                }}
-                                className="mb-2"
-                            >
-                                Test Image Loading
-                            </Button>
                         </div>
                     </div>
                 </CardContent>
@@ -508,7 +552,6 @@ export default function PhotoGallery() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="absolute inset-0 [&>*]:!hidden"></div>
                                 </div>
                                 <div className="p-2">
                                     <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
@@ -560,7 +603,6 @@ export default function PhotoGallery() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="absolute inset-0 [&>*]:!hidden"></div>
                                 </div>
                                 <div className="p-2">
                                     <h3 className="font-semibold text-xs mb-1 truncate">{photo.title}</h3>
@@ -583,23 +625,15 @@ export default function PhotoGallery() {
 
             {/* Dialog content */}
             <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-                <DialogContent
-                    className="w-[85vw] max-w-[1000px] h-[90vh] max-h-[900px] p-6 !w-[85vw] !max-w-[1000px]"
-                    style={{
-                        width: "85vw",
-                        maxWidth: "1000px",
-                        height: "90vh",
-                        maxHeight: "900px",
-                    }}
-                >
-                    <DialogHeader className="pb-4">
+                <DialogContent className="!w-[85vw] !max-w-[1200px] h-[95vh] max-h-[95vh] p-0 overflow-hidden flex flex-col [&>button]:top-4 [&>button]:right-4 [&>button]:z-50">
+                    <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
                         <DialogTitle className="text-xl">{selectedPhoto?.title}</DialogTitle>
                     </DialogHeader>
 
                     {selectedPhoto && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(90vh-8rem)] w-full">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 overflow-hidden px-6 pb-6">
                             {/* Photo Section - Full width on mobile, half on desktop */}
-                            <div className="space-y-4 flex flex-col">
+                            <div className="space-y-4 flex flex-col min-h-0">
                                 <div className="flex-1 min-h-0">
                                     <img
                                         src={selectedPhoto.src || "/placeholder.svg?height=400&width=600"}
@@ -681,7 +715,7 @@ export default function PhotoGallery() {
                             </div>
 
                             {/* Analysis Section - Full height scrollable */}
-                            <div className="space-y-4 overflow-y-auto h-full">
+                            <div className="space-y-4 overflow-y-auto h-full min-h-0">
                                 {/* Analysis Type Selection */}
                                 <Card className="py-0">
                                     <CardContent className="p-4">
@@ -692,15 +726,13 @@ export default function PhotoGallery() {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {analysisTypes.map((type) => (
-                                                    <SelectItem key={type.value} value={type.value}>
-                                                        <div>
-                                                            <div className="font-medium">{type.label}</div>
-                                                            <div className="text-xs text-muted-foreground">{type.description}</div>
-                                                        </div>
+                                                    <SelectItem key={type.id} value={type.id.toString()}>
+                                                        {type.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+
                                         <Button onClick={handleAnalyze} className="w-full mt-3" disabled={isAnalyzing}>
                                             <Plus className="h-4 w-4 mr-2" />
                                             {isAnalyzing ? "Analyzujem..." : "Spustiť novú analýzu"}
@@ -742,8 +774,7 @@ export default function PhotoGallery() {
                                                                 <span className="text-sm font-medium">{getAnalysisTypeLabel(analysis.type)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                {analysis.doctorNotes && <FileText className="h-3 w-3 text-blue-500" />}
-                                                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-muted-foreground">
                                   {new Date(analysis.createdAt).toLocaleDateString("sk-SK")}
                                 </span>
                                                             </div>
@@ -754,6 +785,86 @@ export default function PhotoGallery() {
                                                     </div>
                                                 ))}
                                             </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Selected Analysis Details */}
+                                {selectedAnalysis && (
+                                    <Card className="py-0">
+                                        <CardContent className="p-4">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h3 className="font-semibold mb-2">Výsledky analýzy</h3>
+                                                    <div className="text-sm text-muted-foreground mb-1">
+                                                        {getAnalysisTypeLabel(selectedAnalysis.type)} •{" "}
+                                                        {new Date(selectedAnalysis.createdAt).toLocaleString("sk-SK")}
+                                                    </div>
+                                                    <div className="text-sm font-medium">{selectedAnalysis.confidence}% spoľahlivosť</div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-medium text-sm mb-2">Stav</h4>
+                                                    <p className="text-sm bg-muted p-3 rounded">{selectedAnalysis.condition}</p>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-medium text-sm mb-2">Popis</h4>
+                                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                                        {selectedAnalysis.description}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-medium text-sm mb-2">Odporúčania</h4>
+                                                    <ul className="text-sm text-muted-foreground space-y-1">
+                                                        {selectedAnalysis.recommendations.map((rec, index) => (
+                                                            <li key={index} className="flex items-start gap-2">
+                                                                <span className="text-primary mt-1">•</span>
+                                                                {rec}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <Separator />
+
+                                                {/* Feedback Section */}
+                                                <div>
+                                                    <h4 className="font-medium text-sm mb-3">Ohodnotiť túto analýzu</h4>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant={feedback === "like" ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => handleFeedback("like")}
+                                                        >
+                                                            <ThumbsUp className="h-4 w-4 mr-1" />
+                                                            Užitočné
+                                                        </Button>
+                                                        <Button
+                                                            variant={feedback === "dislike" ? "destructive" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => handleFeedback("dislike")}
+                                                        >
+                                                            <ThumbsDown className="h-4 w-4 mr-1" />
+                                                            Neužitočné
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* No analyses message */}
+                                {selectedPhoto.analyses.length === 0 && (
+                                    <Card className="py-0">
+                                        <CardContent className="p-6 text-center">
+                                            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-muted-foreground mb-2">Žiadne analýzy zatiaľ neboli vykonané</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Vyberte typ analýzy vyššie a spustite novú analýzu tohto obrázka
+                                            </p>
                                         </CardContent>
                                     </Card>
                                 )}
